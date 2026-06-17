@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "Lumen for Outlook",
+  "version": "1.0.0",
+  "description": "AI-powered email reading and composing in Outlook Web, powered by your Lumen agent.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://outlook.office.com/*",
+    "https://outlook.office365.com/*",
+    "https://outlook.live.com/*",
+    "https://outlook.cloud.microsoft/*",
+    "https://lumen-demo.azurewebsites.net/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*",
+        "https://outlook.live.com/*",
+        "https://outlook.cloud.microsoft/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://lumen-demo.azurewebsites.net/*",
+        "http://localhost:8000/*"
+      ],
+      "js": ["lumen-bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["page-bridge.js"],
+      "matches": [
+        "https://lumen-demo.azurewebsites.net/*",
+        "http://localhost:8000/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Open Lumen",
+    "default_icon": {
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "128": "icon.png"
+  }
+}

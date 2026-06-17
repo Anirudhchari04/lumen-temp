@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr /R /I /S \"gmail\\\\|drive.*api\\\\|commSend\" app frontend)",
+      "Bash(findstr /R /I \"lumen/email|lumen/comm|send-real|connection-status\" c:\\\\Users\\\\t-anir\\\\lumen-temp\\\\app\\\\routes\\\\*.py)",
+      "Bash(curl -s -o /dev/null -w \"%{url_effective} -> HTTP %{http_code}\\\\n\" \"https://lumen-demo.azurewebsites.net/assets/index-PvxMaUse.js\")",
+      "Bash(curl -s -o /dev/null -w \"%{url_effective} -> HTTP %{http_code}\\\\n\" \"https://lumen-demo.azurewebsites.net/assets/index-BG9t2crI.js\")",
+      "Bash(curl -s \"https://lumen-demo.azurewebsites.net/\")",
+      "Bash(curl -sI \"https://lumen-demo.azurewebsites.net/auth/google-callback?code=test&state=test\")",
+      "Bash(curl -s \"https://lumen-demo.azurewebsites.net/auth/google-callback?code=test&state=test\")"
+    ]
+  }
+}

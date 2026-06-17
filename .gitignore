@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+env/
+venv/
+.venv/
+
+# Environment / secrets
+.env
+.env.*
+!v2/.env.example
+
+# User data store (real user state — never commit)
+data/lumens.json
+
+# App logs
+app-logs/
+fresh-logs/
+live-logs/
+live-logs-out/
+*.log
+
+# Node
+node_modules/
+frontend/dist/
+
+# VS Code
+.vscode/
+
+# Azure / deploy artifacts
+deploy-out.txt
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db

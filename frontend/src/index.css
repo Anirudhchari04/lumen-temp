@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg-page:    #d6cfc3;
+  --bg-main:    rgba(250,247,242,0.55);
+  --bg-rail:    rgba(255,255,255,0.60);
+  --bg-surface: rgba(255,255,255,0.65);
+  --bg-card:    rgba(255,255,255,0.82);
+  --bg-input:   rgba(255,255,255,0.75);
+  --text-ink:   #2c2820;
+  --text-soft:  #6b6152;
+  --text-muted: #a09080;
+  --border-rail:  rgba(255,255,255,0.55);
+  --border-glass: rgba(255,255,255,0.45);
+  --border-light: rgba(0,0,0,0.06);
+}
+
+html.dark {
+  color-scheme: dark;
+  --bg-page:    #191611;
+  --bg-main:    rgba(26,22,17,0.92);
+  --bg-rail:    rgba(28,24,19,0.88);
+  --bg-surface: rgba(30,26,20,0.92);
+  --bg-card:    rgba(36,31,25,0.94);
+  --bg-input:   rgba(32,28,22,0.90);
+  --text-ink:   #ede5d8;
+  --text-soft:  #b0a090;
+  --text-muted: #7a6e62;
+  --border-rail:  rgba(255,255,255,0.10);
+  --border-glass: rgba(255,255,255,0.10);
+  --border-light: rgba(255,255,255,0.06);
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: var(--bg-page);
+  color: var(--text-ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+/* ── Glass utility classes ── */
+.glass-rail {
+  background: var(--bg-rail);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.glass-surface {
+  background: var(--bg-surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255,255,255,0.90) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07), inset 0 0.5px 0 rgba(255,255,255,0.95);
+}
+html.dark .glass-card {
+  border: 0.5px solid rgba(255,255,255,0.10) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.30), inset 0 0.5px 0 rgba(255,255,255,0.06);
+}
+.glass-input {
+  background: var(--bg-input);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0.5px solid rgba(255,255,255,0.85) !important;
+}
+html.dark .glass-input {
+  border: 0.5px solid rgba(255,255,255,0.12) !important;
+}
+
+* { box-sizing: border-box; }
+
+/* Form controls don't reliably inherit the page text colour, so inputs that set
+   only a background (no explicit text-* class) rendered with an invisible system
+   colour in light mode. Default every control to the theme ink colour — dark in
+   light mode, light in dark mode. An explicit Tailwind text-* class still wins
+   (class selector beats the element selector). */
+input, textarea, select {
+  color: var(--text-ink);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* Tailwind colour overrides for dark mode */
+html.dark .text-ink   { color: var(--text-ink)   !important; }
+html.dark .text-ink-soft  { color: var(--text-soft)  !important; }
+html.dark .text-ink-muted { color: var(--text-muted) !important; }
+html.dark .bg-beige-50,
+html.dark .bg-beige-100,
+html.dark .bg-beige-200,
+html.dark [class*='bg-beige'] { background-color: rgba(40,35,28,0.90) !important; }
+html.dark .bg-white { background-color: rgba(36,31,25,0.94) !important; }
+
+/* Thin, calm scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.14); border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Loading dots + offline pulse */
+@keyframes lumen-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1);    }
+}
+
+/* Mobile bottom-sheet slide-up for SidePanel */
+@keyframes lumen-sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.lumen-sheet { animation: lumen-sheet-in 220ms ease-out; }
+
+/* ── UX Preset: Vision Accessible ── */
+html.ux-vision {
+  font-size: 18px !important;
+}
+html.ux-vision body,
+html.ux-vision #root {
+  background-color: #1a1a2e !important;
+  color: #f0f0f0 !important;
+}
+html.ux-vision * {
+  border-color: #444 !important;
+}
+html.ux-vision .bg-white,
+html.ux-vision .bg-beige-50,
+html.ux-vision [class*="bg-beige"],
+html.ux-vision .bg-cream {
+  background-color: #2a2a4a !important;
+  color: #f0f0f0 !important;
+}
+html.ux-vision .text-ink,
+html.ux-vision .text-ink-soft,
+html.ux-vision .text-ink-muted,
+html.ux-vision .text-2xs,
+html.ux-vision p, html.ux-vision span, html.ux-vision div, html.ux-vision h1, html.ux-vision h2, html.ux-vision h3 {
+  color: #e0e0e0 !important;
+}
+html.ux-vision .bg-amber {
+  background-color: #d4a853 !important;
+}
+html.ux-vision input, html.ux-vision textarea, html.ux-vision select {
+  background: #2a2a4a !important;
+  color: #f0f0f0 !important;
+  border-color: #555 !important;
+}
+html.ux-vision .bubble, html.ux-vision .rounded-card {
+  background-color: #2a2a4a !important;
+  color: #f0f0f0 !important;
+  border-color: #555 !important;
+}
+html.ux-vision button {
+  color: #f0f0f0 !important;
+}
+html.ux-vision .bg-amber, html.ux-vision button.bg-amber {
+  color: #fff !important;
+}
+html.ux-vision::after {
+  content: '👁️ Vision Mode';
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  background: #d4a853;
+  color: #1a1a2e;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 9999;
+}
+
+/* ── UX Preset: Audio First ── */
+html.ux-audio::after {
+  content: '🎧 Audio Mode';
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  background: #d4a853;
+  color: #2c2820;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 9999;
+}
+
+/* ── UX Preset: Minimal ── */
+html.ux-minimal .rounded-card {
+  padding: 4px 8px !important;
+}
+html.ux-minimal::after {
+  content: '⚡ Minimal';
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  background: #e5e0d5;
+  color: #2c2820;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 9999;
+}
+
+/* ── UX Preset: Data ── */
+html.ux-data::after {
+  content: '📊 Data Mode';
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  background: #e5e0d5;
+  color: #2c2820;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 9999;
+}
+
+/* ── TTS indicator ── */
+.tts-speaking {
+  animation: tts-pulse 1.5s ease-in-out infinite;
+}
+@keyframes tts-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Lumen v2 theme — same v1 layout, recolored to the v2 violet/teal console
+   palette. Scoped entirely under html.v2 (toggled by the /v2 route), so v1's
+   warm amber/beige theme is completely untouched. Mirrors the html.dark /
+   html.ux-vision override pattern already used above.
+   ───────────────────────────────────────────────────────────────────────── */
+html.v2 {
+  color-scheme: dark;
+  --bg-page:    #0b0b16;
+  --bg-main:    rgba(18,18,32,0.92);
+  --bg-rail:    rgba(20,20,38,0.90);
+  --bg-surface: rgba(22,22,42,0.92);
+  --bg-card:    rgba(26,26,46,0.94);
+  --bg-input:   rgba(20,20,38,0.92);
+  --text-ink:   #e7e7f5;
+  --text-soft:  #b6b6d8;
+  --text-muted: #8a8ab0;
+  --border-rail:  rgba(160,107,255,0.20);
+  --border-glass: rgba(160,107,255,0.16);
+  --border-light: rgba(255,255,255,0.06);
+  background:
+    radial-gradient(1100px 560px at 82% -12%, #2a1a52 0%, transparent 55%),
+    radial-gradient(820px 460px at -12% 112%, #0e3a44 0%, transparent 55%),
+    #0b0b16;
+}
+html.v2 body, html.v2 #root { background-color: transparent; }
+
+/* glass surfaces pick up violet edges */
+html.v2 .glass-card {
+  border: 0.5px solid rgba(160,107,255,0.22) !important;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.42), inset 0 0.5px 0 rgba(160,107,255,0.10);
+}
+html.v2 .glass-input { border: 0.5px solid rgba(160,107,255,0.20) !important; }
+
+/* neutral surfaces (beige/white) -> indigo panels */
+html.v2 .bg-white { background-color: rgba(22,22,42,0.94) !important; }
+html.v2 .bg-beige-50, html.v2 .bg-beige-100, html.v2 .bg-beige-150,
+html.v2 .bg-beige-200, html.v2 .bg-beige-300, html.v2 [class*='bg-beige'] {
+  background-color: rgba(26,26,46,0.92) !important;
+}
+html.v2 .text-ink      { color: var(--text-ink)   !important; }
+html.v2 .text-ink-soft { color: var(--text-soft)  !important; }
+html.v2 .text-ink-muted{ color: var(--text-muted) !important; }
+html.v2 .border-beige-100, html.v2 .border-beige-200, html.v2 .border-beige-300,
+html.v2 [class*='border-beige'] { border-color: rgba(160,107,255,0.16) !important; }
+
+/* accent: amber/burnt-orange -> violet + teal */
+html.v2 .bg-amber, html.v2 button.bg-amber {
+  background-color: #a06bff !important; color: #fff !important;
+}
+html.v2 .bg-amber-light, html.v2 .bg-amber-50 { background-color: rgba(160,107,255,0.14) !important; }
+html.v2 .text-amber, html.v2 [class*='text-amber'] { color: #c7a6ff !important; }
+html.v2 .border-amber, html.v2 .border-amber-border, html.v2 [class*='border-amber'] {
+  border-color: rgba(160,107,255,0.45) !important;
+}
+html.v2 .ring-amber { --tw-ring-color: #a06bff !important; }
+html.v2 input, html.v2 textarea, html.v2 select {
+  background: var(--bg-input) !important; color: var(--text-ink) !important;
+}
+
+/* corner badge so v2 is unmistakable */
+html.v2::after {
+  content: '✦ v2 · Magentic-One';
+  position: fixed; top: 8px; right: 12px;
+  background: linear-gradient(135deg, #a06bff, #3ddbd9); color: #0b0b16;
+  font-size: 11px; font-weight: 700; padding: 3px 11px; border-radius: 20px;
+  z-index: 9999; pointer-events: none; box-shadow: 0 2px 12px rgba(160,107,255,0.4);
+}
