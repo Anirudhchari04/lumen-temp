@@ -4,7 +4,6 @@ import Shell from './components/Shell.jsx'
 import IconRail from './components/IconRail.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import Dashboard from './pages/Dashboard.jsx'
-import GitHubAgentPage from './pages/GitHubAgentPage.jsx'
 import Peers from './pages/Peers.jsx'
 import Privacy from './pages/Privacy.jsx'
 import Usage from './pages/Usage.jsx'
@@ -20,6 +19,13 @@ import GitHubCallback from './pages/GitHubCallback.jsx'
 import useLumenSession from './hooks/useLumenSession.js'
 import { getStoredToken, getStoredUser, signOut, startGraphTokenRefresh } from './lib/auth.js'
 import { api } from './lib/api.js'
+
+// Full-page redirect to a backend-served page outside the React SPA
+// (the standalone GitHub Repo Explorer). Client-side routing can't render it.
+function ExternalRedirect({ to }) {
+  useEffect(() => { window.location.replace(to) }, [to])
+  return null
+}
 
 function useAuthedUser() {
   const [user, setUser] = useState(getStoredUser())
@@ -96,8 +102,10 @@ function AppShell() {
         <Route path="/v2"         element={<Dashboard session={session} user={user} isDark={isDark} onToggleTheme={toggle} />} />
         <Route path="/peers"      element={<Peers user={user} />} />
         <Route path="/privacy"    element={<Privacy user={user} />} />
-        <Route path="/portfolio"  element={<Navigate to="/github" replace />} />
-        <Route path="/github"     element={<GitHubAgentPage session={session} />} />
+        {/* GitHub agent lives as a standalone page outside the SPA. Both legacy
+            routes do a full-page redirect to it. */}
+        <Route path="/portfolio"  element={<ExternalRedirect to="/github-explorer" />} />
+        <Route path="/github"     element={<ExternalRedirect to="/github-explorer" />} />
         <Route path="/usage"      element={<Usage user={user} />} />
         <Route path="/coding-ta"  element={<CodingTA />} />
         <Route path="/ta"         element={<TAPanel />} />

@@ -1,0 +1,32 @@
+agent-framework-core>=1.1.0
+agent-framework-openai>=1.1.0
+agent-framework-ag-ui>=1.0.0b260421
+agent-framework-a2a>=1.0.0b260421
+agent-framework-orchestrations>=1.0.0b260421
+azure-identity
+azure-cosmos
+aiohttp
+aiosmtplib
+fastapi>=0.133
+uvicorn[standard]
+gunicorn
+python-multipart
+PyJWT
+python-jose[cryptography]
+httpx
+pydantic>=2.0
+pydantic-settings
+PyGithub>=2.1.1
+requests>=2.31.0
+bcrypt>=4.0.0
+cryptography>=41.0.0
+aioimaplib>=1.0.1
+pdfminer.six>=20221105
+tiktoken>=0.7.0
+
+# Lumen v2 (Magentic-One orchestration) — required for the /v2 router to mount on
+# Azure (Oryx installs only this root file). Lean [openai] extra: v2 brings its own
+# specialists, so the heavy [magentic-one] surfers are intentionally omitted.
+# Full v2 dependency notes live in v2/requirements.txt.
+autogen-agentchat>=0.7.5,<0.8
+autogen-ext[openai]>=0.7.5,<0.8

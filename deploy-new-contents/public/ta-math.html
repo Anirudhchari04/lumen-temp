@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📐 Mathematics TA</title>
+    <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+    <link rel="stylesheet" href="/css/chat.css">
+    <style>
+        .progress-section { border-top:1px solid #2a2a4a; margin-top:auto; }
+        .progress-toggle { padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+        .progress-toggle:hover { background:#16213e; }
+        .progress-toggle span { font-size:11px; color:#93c5fd; text-transform:uppercase; letter-spacing:1px; }
+        .progress-toggle .arrow { color:#666; font-size:10px; transition:transform .2s; }
+        .progress-toggle .arrow.open { transform:rotate(180deg); }
+        .progress-body { max-height:0; overflow:hidden; transition:max-height .3s ease; }
+        .progress-body.open { max-height:500px; overflow-y:auto; }
+        .progress-content { padding:0 12px 12px; }
+        .prog-level { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .prog-badge { background:#1e3a5f; color:#93c5fd; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .prog-detail { font-size:10px; color:#888; }
+        .prog-bar-wrap { height:4px; background:#2a2a4a; border-radius:2px; margin:4px 0 10px; }
+        .prog-bar { height:100%; border-radius:2px; transition:width .5s; }
+        .tc-list { margin-top:6px; }
+        .tc-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+        .tc-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:11px; }
+        .tc-name { flex:1; color:#ccc; }
+        .tc-bar-wrap { width:60px; height:5px; background:#2a2a4a; border-radius:3px; }
+        .tc-bar { height:100%; border-radius:3px; }
+        .tc-bar.mastered { background:#10b981; }
+        .tc-bar.in-progress { background:#f59e0b; }
+        .tc-bar.not-started { background:#4b5563; }
+        .tc-pct { font-size:9px; color:#888; width:30px; text-align:right; }
+        .tc-icon { font-size:10px; }
+    </style>
+</head>
+<body>
+    <div class="header" style="background:linear-gradient(135deg,#1a1a2e,#1e3a5f)">
+        <div><h1 style="color:#93c5fd">📐 Mathematics TA</h1><div class="sub" id="lumenId">Algebra · Calculus · Probability — 7 Levels</div></div>
+        <div class="header-right"><a href="/demo" class="btn-sm" style="background:#374151;color:#93c5fd;text-decoration:none;border:1px solid #2563eb;border-radius:20px;padding:6px 16px">← Lumen</a></div>
+    </div>
+    <div class="main">
+        <div class="sidebar">
+            <button class="new-chat-btn" style="background:#2563eb" onclick="newChat()">+ New Chat</button>
+            <div id="threadList"></div>
+            <div class="progress-section">
+                <div class="progress-toggle" onclick="toggleProgress()">
+                    <span>My Progress</span>
+                    <span class="arrow" id="progArrow">▼</span>
+                </div>
+                <div class="progress-body" id="progBody">
+                    <div class="progress-content" id="progContent">
+                        <div style="color:#666;font-size:11px">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-area">
+            <div class="messages" id="messages"></div>
+            <div class="input-bar">
+                <input type="text" id="chatInput" placeholder="Ask me anything about math..." />
+                <button id="micBtn" onclick="toggleMic()" style="background:#374151;display:none" class="btn-sm">🎤</button>
+                <button id="sendBtn" onclick="sendMessage()" style="background:#2563eb">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const CHANNEL = 'math-ta';
+        const CHANNEL_META = '📐 Mathematics TA';
+        const CHAT_ENDPOINT = '/chat/ta/math-ta';
+        let TOKEN = localStorage.getItem('lumen.token') || localStorage.getItem('lumen_token');
+        let USER = JSON.parse(localStorage.getItem('lumen.user') || localStorage.getItem('lumen_user') || 'null');
+
+        const MSAL_CONFIG = {
+            auth: {
+                clientId: 'baabcd68-1c44-44bb-ba2e-c6bbc77b216d',
+                authority: 'https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47',
+                redirectUri: window.location.origin + '/',
+            },
+            cache: { cacheLocation: 'localStorage' },
+        };
+        let msalInstance = null;
+        async function getMsalInstance() {
+            if (msalInstance) return msalInstance;
+            if (typeof msal !== 'undefined') {
+                msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+                return msalInstance;
+            }
+            return null;
+        }
+
+        function isTokenExpired(token) {
+            try { const p=JSON.parse(atob(token.split('.')[1])); return p.exp && (p.exp*1000 < Date.now()); } catch { return true; }
+        }
+        async function ensureAuth() {
+            if(TOKEN && USER && !isTokenExpired(TOKEN)) { document.getElementById('lumenId').textContent=`${USER.name||'Student'} — Mathematics TA`; return; }
+            localStorage.removeItem('lumen.token'); localStorage.removeItem('lumen.user');
+            localStorage.removeItem('lumen_token'); localStorage.removeItem('lumen_user');
+            TOKEN=null; USER=null;
+            try {
+                const inst = await getMsalInstance();
+                if (!inst) throw new Error('MSAL not loaded');
+                const resp = await inst.loginPopup({ scopes: ['openid', 'profile', 'email'] });
+                const r = await fetch('/auth/entra-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: resp.idToken }) });
+                const d = await r.json();
+                if (d.token) {
+                    TOKEN = d.token; USER = d.user;
+                    localStorage.setItem('lumen.token', TOKEN);
+                    localStorage.setItem('lumen.user', JSON.stringify(USER));
+                    document.getElementById('lumenId').textContent = `${USER.name} — Mathematics TA`;
+                }
+            } catch(e) { console.error('Auth failed:', e); }
+        }
+        async function api(path,opts={}) {
+            if(!TOKEN || isTokenExpired(TOKEN)) { await ensureAuth(); }
+            const r = await fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`,...(opts.headers||{})}});
+            if(r.status===401) { await ensureAuth(); return fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`,...(opts.headers||{})}}); }
+            return r;
+        }
+        function stripMd(t) { return t.replace(/#{1,6}\s/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^[-*]\s/gm,'• '); }
+
+        // ── UX Preset handling ──
+        let UX_PRESET = null;
+        async function loadUxPreset() {
+            try {
+                const r = await api('/lumen/ux');
+                const d = await r.json();
+                UX_PRESET = d.active || null;
+                applyUxPreset();
+            } catch {}
+        }
+        function applyUxPreset() {
+            if (!UX_PRESET) return;
+            document.documentElement.classList.remove('ux-vision','ux-audio','ux-minimal','ux-data');
+            if (UX_PRESET.id === 'vision') {
+                document.documentElement.classList.add('ux-vision');
+                document.body.style.fontSize = '18px';
+                document.body.style.background = '#1a1a2e';
+                document.body.style.color = '#f0f0f0';
+            } else if (UX_PRESET.id === 'audio-first') {
+                document.documentElement.classList.add('ux-audio');
+            } else if (UX_PRESET.id === 'minimal') {
+                document.documentElement.classList.add('ux-minimal');
+            }
+            // Show/hide mic button
+            const micBtn = document.getElementById('micBtn');
+            if (micBtn) micBtn.style.display = UX_PRESET.stt_enabled ? 'inline-block' : 'none';
+        }
+        function speakText(text) {
+            if (!UX_PRESET?.tts_enabled || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const clean = text.replace(/[*#_`]/g, '').replace(/\n+/g, '. ');
+            const utt = new SpeechSynthesisUtterance(clean);
+            utt.rate = 1.0; utt.lang = 'en-US';
+            window.speechSynthesis.speak(utt);
+        }
+        function toggleMic() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) { alert('Speech not supported'); return; }
+            const recognition = new SpeechRec();
+            recognition.lang = 'en-US'; recognition.interimResults = false;
+            const btn = document.getElementById('micBtn');
+            recognition.onstart = () => { btn.style.background = '#ef4444'; btn.textContent = '⏹'; };
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                if (text.trim()) { document.getElementById('chatInput').value = text; sendMessage(); }
+            };
+            recognition.onend = () => { btn.style.background = '#374151'; btn.textContent = '🎤'; };
+            recognition.onerror = () => { btn.style.background = '#374151'; btn.textContent = '🎤'; };
+            recognition.start();
+        }
+
+        function addMessage(role,text,meta='') { const clean=stripMd(text); const d=document.createElement('div'); d.className=`msg ${role}`; d.innerHTML=`<div class="bubble">${clean.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>${meta?`<div class="meta">${meta}</div>`:''}`; const c=document.getElementById('messages'); c.appendChild(d); c.scrollTop=c.scrollHeight; if(role==='assistant') speakText(text); }
+        function clearMessages() { document.getElementById('messages').innerHTML=''; }
+
+        async function sendMessage() {
+            const input=document.getElementById('chatInput'); const msg=input.value.trim(); if(!msg) return; input.value='';
+            addMessage('user',msg);
+            const btn=document.getElementById('sendBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+            try {
+                const r=await api(CHAT_ENDPOINT,{method:'POST',body:JSON.stringify({message:msg,thread_id:currentThreadId})});
+                if(!r.ok) { const e=await r.json().catch(()=>({})); addMessage('assistant',`Something went wrong: ${e.detail||r.statusText}. Try refreshing.`); btn.disabled=false; btn.textContent='Send'; return; }
+                const data=await r.json();
+                if(data.thread_id) currentThreadId=data.thread_id;
+                addMessage('assistant',data.reply||'No response',CHANNEL_META+' | Progress synced to Lumen');
+                loadThreads();
+                loadProgress();
+            } catch(err) { addMessage('assistant',`Connection error: ${err.message}`); }
+            btn.disabled=false; btn.textContent='Send';
+        }
+        document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+
+        function toggleProgress() {
+            const body=document.getElementById('progBody');
+            const arrow=document.getElementById('progArrow');
+            body.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+
+        async function loadProgress() {
+            try {
+                const r=await api('/lumen/state?ta_id=math-ta');
+                const state=await r.json();
+                const ta=state.current_ta_state||{};
+                const tcs=state.tc_inventory||{mastered:[],in_progress:[]};
+                const el=document.getElementById('progContent');
+
+                const level=ta.current_level||1;
+                const module=ta.current_module||'Foundations';
+                const label=ta.level_label||'beginner';
+                const sessions=ta.session_count||0;
+                const mastered=(ta.topics_mastered||[]).length;
+                const covered=(ta.topics_covered||[]).length;
+
+                // All math TCs
+                const allTCs = ['math-number-sense','math-variable-as-unknown','math-function-concept','math-linear-transform','math-limits','math-derivatives','math-integrals','math-ftc','math-probability-distributions','math-optimization'];
+                const masteredSet = new Set((tcs.mastered||[]).map(t=>t.tc_id));
+                const ipMap = {};
+                (tcs.in_progress||[]).forEach(t=>ipMap[t.tc_id]=t.progress_pct||0);
+
+                let tcHtml = allTCs.map(tc => {
+                    const name = tc.replace('math-','').replace(/-/g,' ');
+                    let status, pct, barClass, icon;
+                    if(masteredSet.has(tc)) { status='mastered'; pct=100; barClass='mastered'; icon='✅'; }
+                    else if(tc in ipMap) { status='in-progress'; pct=ipMap[tc]; barClass='in-progress'; icon='🔄'; }
+                    else { status='not-started'; pct=0; barClass='not-started'; icon='○'; }
+                    return `<div class="tc-item"><span class="tc-icon">${icon}</span><span class="tc-name">${name}</span><div class="tc-bar-wrap"><div class="tc-bar ${barClass}" style="width:${pct}%"></div></div><span class="tc-pct">${pct}%</span></div>`;
+                }).join('');
+
+                el.innerHTML = `
+                    <div class="prog-level"><span class="prog-badge">Level ${level}</span><span class="prog-detail">${module} · ${label}</span></div>
+                    <div class="prog-detail">${sessions} sessions · ${mastered} mastered · ${covered} covered</div>
+                    <div class="prog-bar-wrap"><div class="prog-bar" style="width:${Math.min(100,mastered*10)}%;background:#2563eb"></div></div>
+                    <div class="tc-list"><div class="tc-label">Threshold Concepts</div>${tcHtml}</div>
+                `;
+            } catch { document.getElementById('progContent').innerHTML='<div style="color:#666;font-size:11px">Could not load progress</div>'; }
+        }
+    </script>
+    <script src="/js/chat-sidebar.js"></script>
+    <script>
+        (async()=>{
+            await ensureAuth();
+            await loadUxPreset();
+            await loadProgress();
+            await loadThreads();
+            if(threads.length) { await switchThread(threads[0].id); }
+            else { addMessage('assistant',"Welcome to Mathematics TA! 📐\n\nI teach math from foundations to applications (7 levels).\nYour progress syncs to your Lumen automatically.\n\nTry: \"teach me calculus\" or \"explain derivatives\"",CHANNEL_META); }
+        })();
+    </script>
+    <script src="/js/hey-lumen.js" defer></script>`n</body>
+</html>

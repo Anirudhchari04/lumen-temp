@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Calendar Agent</title>
+    <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+    <link rel="stylesheet" href="/css/chat.css">
+    <style>
+        /* ── Beige/warm theme overrides ── */
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:system-ui,'Segoe UI',sans-serif; background:#faf8f4; color:#2c2820; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
+        .header { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; background:#f3efe6; border-bottom:1px solid #e8e0d0; }
+        .header h1 { font-size:20px; font-weight:700; color:#c8762a; margin:0; }
+        .header .sub { font-size:12px; color:#6b6152; margin-top:2px; }
+        .header-right { display:flex; gap:8px; }
+        .btn-back { background:white; color:#c8762a; text-decoration:none; border:1px solid #e8e0d0; border-radius:20px; padding:6px 16px; font-size:13px; font-weight:500; transition:all .15s; }
+        .btn-back:hover { background:#fdf0e0; border-color:#f0c070; }
+
+        /* ── Layout ── */
+        .cal-main { display:flex; flex:1; overflow:hidden; }
+        .cal-left { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .cal-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:white; border-bottom:1px solid #e8e0d0; }
+        .cal-toolbar h2 { font-size:17px; font-weight:600; color:#2c2820; margin:0; }
+        .cal-nav { background:white; border:1px solid #e8e0d0; color:#6b6152; padding:6px 14px; border-radius:10px; cursor:pointer; font-size:13px; transition:all .15s; }
+        .cal-nav:hover { background:#fdf0e0; border-color:#f0c070; color:#c8762a; }
+        .toolbar-right { display:flex; gap:6px; align-items:center; }
+
+        /* ── Calendar Grid ── */
+        .cal-scroll { flex:1; overflow-y:auto; padding:0 16px 12px; background:#faf8f4; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:#e8e0d0; border-radius:16px; overflow:hidden; margin-top:12px; }
+        .cal-day-header { padding:10px 4px; text-align:center; font-size:11px; font-weight:600; color:#a09080; text-transform:uppercase; letter-spacing:1px; background:#f3efe6; }
+        .cal-cell { min-height:80px; padding:6px 8px; background:white; cursor:pointer; position:relative; transition:background .15s; }
+        .cal-cell:hover { background:#fdf0e0; }
+        .cal-cell.today { box-shadow:inset 0 0 0 2px #c8762a; z-index:1; }
+        .cal-cell.other-month { background:#faf8f4; }
+        .cal-cell.other-month .cal-date { color:#c0b8a8; }
+        .cal-cell.selected { background:#fdf0e0; box-shadow:inset 0 0 0 2px #f0c070; }
+        .cal-date { font-size:13px; color:#2c2820; font-weight:500; }
+        .cal-dots { display:flex; gap:3px; flex-wrap:wrap; margin-top:4px; }
+        .cal-dot { width:7px; height:7px; border-radius:50%; }
+        .cal-dot.study { background:#6366f1; }
+        .cal-dot.exam { background:#e11d48; }
+        .cal-dot.reminder { background:#c8762a; }
+        .cal-dot.deadline { background:#e11d48; }
+        .cal-dot.meeting { background:#10b981; }
+        .cal-dot.holiday { background:#9333ea; }
+        .cal-dot.other { background:#64748b; }
+        .cal-event-mini { font-size:9px; color:#6b6152; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        /* ── Day Panel ── */
+        .day-panel { width:340px; background:white; border-left:1px solid #e8e0d0; display:flex; flex-direction:column; overflow:hidden; transition:width .2s; }
+        .day-panel.hidden { width:0; border:none; overflow:hidden; }
+        .day-panel-header { padding:16px; border-bottom:1px solid #e8e0d0; display:flex; justify-content:space-between; align-items:center; }
+        .day-panel-header h3 { color:#2c2820; font-size:15px; font-weight:600; margin:0; }
+        .day-panel-close { background:none; border:none; color:#a09080; font-size:18px; cursor:pointer; padding:4px; }
+        .day-panel-close:hover { color:#c8762a; }
+        .day-events { flex:1; overflow-y:auto; padding:12px 16px; }
+        .day-event { padding:10px 12px; border-radius:10px; margin-bottom:8px; background:#faf8f4; border-left:3px solid #6366f1; }
+        .day-event.reminder { border-left-color:#c8762a; }
+        .day-event.exam, .day-event.deadline { border-left-color:#e11d48; }
+        .day-event.meeting { border-left-color:#10b981; }
+        .day-event.holiday { border-left-color:#9333ea; }
+        .day-event.other { border-left-color:#64748b; }
+        .de-title { font-size:13px; color:#2c2820; font-weight:600; }
+        .de-meta { font-size:11px; color:#a09080; margin-top:3px; }
+        .de-type { display:inline-block; font-size:9px; padding:2px 8px; border-radius:20px; margin-left:6px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+        .de-actions { margin-top:6px; display:flex; gap:6px; }
+        .de-actions button { background:#faf8f4; border:1px solid #e8e0d0; color:#6b6152; border-radius:8px; padding:4px 10px; font-size:11px; cursor:pointer; }
+        .de-actions button:hover { background:#fdf0e0; border-color:#f0c070; color:#c8762a; }
+        .de-actions button.danger:hover { background:#fff1f2; border-color:#fca5a5; color:#e11d48; }
+        .day-empty { color:#a09080; font-size:13px; text-align:center; padding:30px 16px; }
+
+        /* ── Add Event Button & Modal ── */
+        .add-event-btn { margin:12px 16px; padding:10px; background:#c8762a; color:white; border:none; border-radius:10px; cursor:pointer; font-size:13px; font-weight:500; transition:background .15s; }
+        .add-event-btn:hover { background:#a8601e; }
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(44,40,32,.4); z-index:100; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:white; border-radius:16px; padding:24px; width:400px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.12); }
+        .modal h3 { font-size:16px; color:#2c2820; margin-bottom:16px; }
+        .modal label { display:block; font-size:12px; color:#6b6152; margin-bottom:4px; margin-top:10px; font-weight:500; }
+        .modal input, .modal select, .modal textarea { width:100%; padding:8px 12px; background:#faf8f4; border:1px solid #e8e0d0; border-radius:10px; color:#2c2820; font-size:13px; font-family:inherit; }
+        .modal input:focus, .modal select:focus, .modal textarea:focus { border-color:#f0c070; outline:none; box-shadow:0 0 0 3px rgba(200,118,42,.1); }
+        .modal textarea { resize:vertical; min-height:60px; }
+        .modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
+        .modal-actions button { padding:8px 18px; border-radius:10px; font-size:13px; cursor:pointer; font-weight:500; border:none; }
+        .modal-actions .cancel { background:#faf8f4; color:#6b6152; border:1px solid #e8e0d0; }
+        .modal-actions .cancel:hover { background:#f3efe6; }
+        .modal-actions .submit { background:#c8762a; color:white; }
+        .modal-actions .submit:hover { background:#a8601e; }
+
+        /* ── Upcoming Events ── */
+        .upcoming-section { padding:12px 20px 16px; border-top:1px solid #e8e0d0; background:white; }
+        .upcoming-section h4 { font-size:12px; color:#a09080; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-weight:600; }
+        .upcoming-list { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+        .upcoming-card { min-width:180px; padding:10px 14px; background:#faf8f4; border:1px solid #e8e0d0; border-radius:12px; flex-shrink:0; cursor:pointer; transition:all .15s; }
+        .upcoming-card:hover { border-color:#f0c070; background:#fdf0e0; }
+        .upcoming-card .uc-date { font-size:11px; color:#a09080; }
+        .upcoming-card .uc-title { font-size:13px; color:#2c2820; font-weight:600; margin-top:2px; }
+        .upcoming-card .uc-badge { display:inline-block; font-size:9px; padding:1px 6px; border-radius:10px; margin-top:4px; font-weight:600; }
+
+        /* ── Natural Language Input ── */
+        .nl-bar { display:flex; gap:8px; padding:10px 20px; background:#f3efe6; border-top:1px solid #e8e0d0; }
+        .nl-bar input { flex:1; padding:10px 14px; border:1px solid #e8e0d0; border-radius:10px; background:white; color:#2c2820; font-size:13px; font-family:inherit; }
+        .nl-bar input:focus { border-color:#f0c070; outline:none; box-shadow:0 0 0 3px rgba(200,118,42,.1); }
+        .nl-bar input::placeholder { color:#a09080; }
+        .nl-bar button { padding:10px 18px; background:#c8762a; color:white; border:none; border-radius:10px; cursor:pointer; font-size:13px; font-weight:500; white-space:nowrap; }
+        .nl-bar button:hover { background:#a8601e; }
+        .nl-bar button:disabled { opacity:.5; cursor:default; }
+
+        /* ── Preferences Panel ── */
+        .prefs-panel { display:none; background:white; border:1px solid #e8e0d0; border-radius:12px; padding:16px 20px; margin:8px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06); font-size:13px; }
+        .prefs-panel.open { display:block; }
+        .prefs-panel strong { color:#2c2820; }
+        .prefs-panel select { padding:4px 8px; border:1px solid #e8e0d0; border-radius:8px; background:#faf8f4; color:#2c2820; font-size:13px; }
+        .prefs-panel label { color:#6b6152; margin-right:16px; }
+        .prefs-panel button { background:#c8762a; color:white; border:none; border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; }
+        .prefs-panel button:hover { background:#a8601e; }
+
+        /* ── Toast ── */
+        .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2c2820; color:white; padding:10px 24px; border-radius:10px; font-size:13px; z-index:999; box-shadow:0 4px 12px rgba(0,0,0,.15); animation:fadeUp .3s; }
+        @keyframes fadeUp { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+        /* ── Spinner ── */
+        .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .6s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div><h1>📅 Calendar Agent</h1><div class="sub" id="lumenId">Study Plans · Events · Reminders</div></div>
+        <div class="header-right"><a href="/" class="btn-back">← Lumen</a></div>
+    </div>
+
+    <div class="cal-main">
+        <div class="cal-left">
+            <!-- Toolbar -->
+            <div class="cal-toolbar">
+                <button class="cal-nav" onclick="changeMonth(-1)">← Prev</button>
+                <h2 id="calTitle"></h2>
+                <div class="toolbar-right">
+                    <button class="cal-nav" onclick="togglePrefsPanel()" title="Reminder settings">⚙️</button>
+                    <button class="cal-nav" onclick="openAddModal()" title="Add event">+ Add Event</button>
+                    <button class="cal-nav" onclick="changeMonth(1)">Next →</button>
+                </div>
+            </div>
+
+            <!-- Preferences Panel -->
+            <div class="prefs-panel" id="prefsPanel">
+                <strong>Default Reminder Settings</strong>
+                <div style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+                    <label>Remind me
+                        <select id="prefRemind">
+                            <option value="0">at start only</option>
+                            <option value="5">5 min before</option>
+                            <option value="10">10 min before</option>
+                            <option value="15" selected>15 min before</option>
+                            <option value="30">30 min before</option>
+                            <option value="60">1 hour before</option>
+                            <option value="1440">1 day before</option>
+                        </select>
+                    </label>
+                    <label><input type="checkbox" id="prefAtStart" checked /> Notify at start</label>
+                    <button onclick="savePrefs()">Save</button>
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="cal-scroll">
+                <div class="cal-grid" id="calGrid"></div>
+            </div>
+
+            <!-- Upcoming Events -->
+            <div class="upcoming-section">
+                <h4>Upcoming Events</h4>
+                <div class="upcoming-list" id="upcomingList"><span style="color:#a09080;font-size:13px">Loading…</span></div>
+            </div>
+
+            <!-- Natural Language Input -->
+            <div class="nl-bar">
+                <input type="text" id="nlInput" placeholder='Try: "Study math tomorrow at 3pm" or "Deadline Friday 11:59pm"' />
+                <button id="nlBtn" onclick="sendNatural()">Schedule</button>
+            </div>
+        </div>
+
+        <!-- Day Panel -->
+        <div class="day-panel hidden" id="dayPanel">
+            <div class="day-panel-header">
+                <h3 id="dayTitle">Select a day</h3>
+                <button class="day-panel-close" onclick="closeDay()">✕</button>
+            </div>
+            <div class="day-events" id="dayEvents"></div>
+            <button class="add-event-btn" onclick="openAddModal()">+ Add Event</button>
+        </div>
+    </div>
+
+    <!-- Add Event Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h3>📅 New Event</h3>
+            <label>Title</label>
+            <input type="text" id="evTitle" placeholder="e.g. Study Linear Algebra" />
+            <label>Date</label>
+            <input type="date" id="evDate" />
+            <label>Time</label>
+            <input type="time" id="evTime" />
+            <label>Type</label>
+            <select id="evType">
+                <option value="study">📘 Study</option>
+                <option value="reminder">🔔 Reminder</option>
+                <option value="deadline">🔴 Deadline</option>
+                <option value="exam">📝 Exam</option>
+                <option value="meeting">🤝 Meeting</option>
+                <option value="holiday">🎉 Holiday</option>
+                <option value="other">📌 Other</option>
+            </select>
+            <label>Duration (minutes)</label>
+            <input type="number" id="evDuration" value="60" min="5" />
+            <label>Description</label>
+            <textarea id="evDesc" placeholder="Optional notes…"></textarea>
+            <label>Remind before (minutes)</label>
+            <input type="number" id="evReminder" value="15" min="0" />
+            <div class="modal-actions">
+                <button class="cancel" onclick="closeAddModal()">Cancel</button>
+                <button class="submit" onclick="addEvent()">Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let TOKEN = localStorage.getItem('lumen.token') || localStorage.getItem('lumen_token');
+        let USER = JSON.parse(localStorage.getItem('lumen.user') || localStorage.getItem('lumen_user') || 'null');
+        let allEvents = [];
+        let currentYear, currentMonth, selectedDate = null;
+
+        const MSAL_CONFIG = {
+            auth: {
+                clientId: 'baabcd68-1c44-44bb-ba2e-c6bbc77b216d',
+                authority: 'https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47',
+                redirectUri: window.location.origin + '/',
+            },
+            cache: { cacheLocation: 'localStorage' },
+        };
+        let msalInstance = null;
+        async function getMsalInstance() {
+            if (msalInstance) return msalInstance;
+            if (typeof msal !== 'undefined') {
+                msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+                return msalInstance;
+            }
+            return null;
+        }
+
+        // ── Auth (MSAL Entra login) ──
+        function isTokenExpired(token) {
+            try { const p = JSON.parse(atob(token.split('.')[1])); return p.exp && (p.exp * 1000 < Date.now()); } catch { return true; }
+        }
+        async function ensureAuth() {
+            if (TOKEN && USER && !isTokenExpired(TOKEN)) { document.getElementById('lumenId').textContent = (USER.name || 'Student') + ' — Calendar'; return; }
+            localStorage.removeItem('lumen.token'); localStorage.removeItem('lumen.user');
+            localStorage.removeItem('lumen_token'); localStorage.removeItem('lumen_user');
+            TOKEN = null; USER = null;
+            try {
+                const inst = await getMsalInstance();
+                if (!inst) throw new Error('MSAL not loaded');
+                const resp = await inst.loginPopup({ scopes: ['openid', 'profile', 'email'] });
+                const r = await fetch('/auth/entra-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: resp.idToken }) });
+                const d = await r.json();
+                if (d.token) {
+                    TOKEN = d.token; USER = d.user;
+                    localStorage.setItem('lumen.token', TOKEN);
+                    localStorage.setItem('lumen.user', JSON.stringify(USER));
+                    document.getElementById('lumenId').textContent = USER.name + ' — Calendar';
+                }
+            } catch(e) { console.error('Auth failed:', e); }
+        }
+        async function api(path, opts = {}) {
+            if (!TOKEN || isTokenExpired(TOKEN)) await ensureAuth();
+            const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN, ...(opts.headers || {}) } });
+            if (r.status === 401) { await ensureAuth(); return fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN, ...(opts.headers || {}) } }); }
+            return r;
+        }
+
+        // ── Calendar Rendering ──
+        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        function renderCalendar() {
+            document.getElementById('calTitle').textContent = MONTHS[currentMonth] + ' ' + currentYear;
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = DAYS.map(d => '<div class="cal-day-header">' + d + '</div>').join('');
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const startDow = firstDay.getDay(); // 0=Sun
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const prevDays = new Date(currentYear, currentMonth, 0).getDate();
+            const today = new Date();
+            const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+            // Previous month filler
+            for (let i = startDow - 1; i >= 0; i--) {
+                const d = prevDays - i;
+                grid.innerHTML += '<div class="cal-cell other-month"><span class="cal-date">' + d + '</span></div>';
+            }
+            // Current month
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selectedDate;
+                const dayEvts = allEvents.filter(e => e.date === dateStr);
+                const dots = dayEvts.map(e => '<span class="cal-dot ' + (e.event_type || e.type || 'other') + '"></span>').join('');
+                const mini = dayEvts.length ? '<div class="cal-event-mini">' + esc(dayEvts[0].title) + (dayEvts.length > 1 ? ' +' + (dayEvts.length - 1) : '') + '</div>' : '';
+                grid.innerHTML += '<div class="cal-cell' + (isToday ? ' today' : '') + (isSelected ? ' selected' : '') + '" onclick="selectDate(\'' + dateStr + '\')">' +
+                    '<span class="cal-date">' + d + '</span><div class="cal-dots">' + dots + '</div>' + mini + '</div>';
+            }
+            // Next month filler
+            const totalCells = startDow + daysInMonth;
+            const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (let d = 1; d <= remaining; d++) {
+                grid.innerHTML += '<div class="cal-cell other-month"><span class="cal-date">' + d + '</span></div>';
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        }
+
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderCalendar();
+            showDayPanel(dateStr);
+        }
+
+        // ── Day Panel ──
+        function showDayPanel(dateStr) {
+            const panel = document.getElementById('dayPanel');
+            panel.classList.remove('hidden');
+            const d = new Date(dateStr + 'T00:00:00');
+            document.getElementById('dayTitle').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const dayEvts = allEvents.filter(e => e.date === dateStr);
+            const el = document.getElementById('dayEvents');
+            if (!dayEvts.length) {
+                el.innerHTML = '<div class="day-empty">No events on this day.<br>Click "+ Add Event" to schedule one.</div>';
+                return;
+            }
+            el.innerHTML = dayEvts.map(e => {
+                const t = e.event_type || e.type || 'other';
+                const isHoliday = t === 'holiday';
+                const actions = isHoliday
+                    ? '<span class="holiday-lock" style="font-size:11px;color:#9333ea;font-style:italic">🔒 Fixed holiday</span>'
+                    : '<button onclick="markEvent(\'' + e.id + '\',\'completed\')">✓ Done</button>' +
+                      '<button class="danger" onclick="deleteEvent(\'' + e.id + '\')">✕ Delete</button>';
+                return '<div class="day-event ' + t + '">' +
+                    '<span class="de-title">' + esc(e.title) + '</span>' +
+                    '<span class="de-type" style="background:' + typeBg(t) + ';color:' + typeText(t) + '">' + t + '</span>' +
+                    '<div class="de-meta">' + (e.time && e.time !== 'TBD' ? e.time : '') + (e.duration_mins ? ' · ' + e.duration_mins + ' min' : '') + (e.description ? ' · ' + esc(e.description) : '') + '</div>' +
+                    '<div class="de-actions">' + actions + '</div></div>';
+            }).join('');
+        }
+
+        function typeBg(t) {
+            return { study: '#eef2ff', reminder: '#fdf0e0', deadline: '#fff1f2', exam: '#fff1f2', meeting: '#ecfdf5', holiday: '#f5f3ff', other: '#f1f5f9' }[t] || '#f1f5f9';
+        }
+        function typeText(t) {
+            return { study: '#6366f1', reminder: '#c8762a', deadline: '#e11d48', exam: '#e11d48', meeting: '#10b981', holiday: '#9333ea', other: '#64748b' }[t] || '#64748b';
+        }
+
+        function closeDay() {
+            document.getElementById('dayPanel').classList.add('hidden');
+            selectedDate = null;
+            renderCalendar();
+        }
+
+        // ── Event CRUD ──
+        async function loadEvents() {
+            try {
+                const r = await api('/agents/calendar/events');
+                const d = await r.json();
+                allEvents = d.events || [];
+                renderCalendar();
+                renderUpcoming();
+            } catch {}
+        }
+
+        async function addEvent() {
+            const title = document.getElementById('evTitle').value.trim();
+            if (!title) return;
+            const body = {
+                title,
+                event_type: document.getElementById('evType').value,
+                date: document.getElementById('evDate').value || selectedDate || new Date().toISOString().slice(0, 10),
+                time: document.getElementById('evTime').value || null,
+                duration_mins: parseInt(document.getElementById('evDuration').value) || 60,
+                description: document.getElementById('evDesc').value.trim() || null,
+                reminder_minutes_before: parseInt(document.getElementById('evReminder').value) || 15,
+            };
+            try {
+                await api('/agents/calendar/schedule', { method: 'POST', body: JSON.stringify(body) });
+                closeAddModal();
+                await loadEvents();
+                if (selectedDate) showDayPanel(selectedDate);
+                showToast('Event scheduled!');
+            } catch (e) { showToast('Error: ' + e.message); }
+        }
+
+        async function markEvent(id, status) {
+            await api('/agents/calendar/events/' + id, { method: 'PUT', body: JSON.stringify({ status }) });
+            await loadEvents();
+            if (selectedDate) showDayPanel(selectedDate);
+            showToast('Event marked ' + status);
+        }
+
+        async function deleteEvent(id) {
+            try {
+                const r = await api('/agents/calendar/events/' + id, { method: 'DELETE' });
+                if (!r.ok) {
+                    const d = await r.json().catch(() => ({}));
+                    if (r.status === 403) {
+                        showToast(d.detail || 'Holidays are fixed and cannot be removed');
+                        return;
+                    }
+                    showToast('Error: ' + (d.detail || r.statusText));
+                    return;
+                }
+                await loadEvents();
+                if (selectedDate) showDayPanel(selectedDate);
+                showToast('Event deleted');
+            } catch (e) { showToast('Error: ' + e.message); }
+        }
+
+        // ── Natural Language ──
+        async function sendNatural() {
+            const input = document.getElementById('nlInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            const btn = document.getElementById('nlBtn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+            try {
+                const r = await api('/agents/calendar/schedule-natural', { method: 'POST', body: JSON.stringify({ message: msg }) });
+                if (r.ok) {
+                    const d = await r.json();
+                    showToast(d.message || 'Scheduled!');
+                    await loadEvents();
+                    if (selectedDate) showDayPanel(selectedDate);
+                } else { showToast('Could not schedule. Try again.'); }
+            } catch (e) { showToast('Error: ' + e.message); }
+            btn.disabled = false; btn.textContent = 'Schedule';
+        }
+        document.getElementById('nlInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendNatural(); });
+
+        // ── Upcoming Events ──
+        function renderUpcoming() {
+            const now = new Date();
+            const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            const upcoming = allEvents.filter(e => e.date >= todayStr).sort((a, b) => (a.date + (a.time || '')) > (b.date + (b.time || '')) ? 1 : -1).slice(0, 6);
+            const el = document.getElementById('upcomingList');
+            if (!upcoming.length) { el.innerHTML = '<span style="color:#a09080;font-size:13px">No upcoming events</span>'; return; }
+            el.innerHTML = upcoming.map(e => {
+                const t = e.event_type || e.type || 'other';
+                const d = new Date(e.date + 'T00:00:00');
+                return '<div class="upcoming-card" onclick="selectDate(\'' + e.date + '\')">' +
+                    '<div class="uc-date">' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }) + (e.time ? ' · ' + e.time : '') + '</div>' +
+                    '<div class="uc-title">' + esc(e.title) + '</div>' +
+                    '<span class="uc-badge" style="background:' + typeBg(t) + ';color:' + typeText(t) + '">' + t + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // ── Add Event Modal ──
+        function openAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.add('open');
+            if (selectedDate) document.getElementById('evDate').value = selectedDate;
+            else document.getElementById('evDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('evTitle').value = '';
+            document.getElementById('evTime').value = '';
+            document.getElementById('evDuration').value = '60';
+            document.getElementById('evDesc').value = '';
+            document.getElementById('evReminder').value = '15';
+            document.getElementById('evTitle').focus();
+        }
+        function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+
+        // ── Preferences ──
+        function togglePrefsPanel() { document.getElementById('prefsPanel').classList.toggle('open'); if (document.getElementById('prefsPanel').classList.contains('open')) loadPrefs(); }
+        async function loadPrefs() {
+            try {
+                const r = await api('/agents/calendar/preferences');
+                const d = await r.json();
+                document.getElementById('prefRemind').value = String(d.reminder_minutes_before ?? 15);
+                document.getElementById('prefAtStart').checked = !!d.notify_at_start;
+            } catch {}
+        }
+        async function savePrefs() {
+            const body = {
+                reminder_minutes_before: parseInt(document.getElementById('prefRemind').value),
+                notify_at_start: document.getElementById('prefAtStart').checked,
+            };
+            await api('/agents/calendar/preferences', { method: 'POST', body: JSON.stringify(body) });
+            showToast('Reminder settings saved');
+        }
+
+        // ── Toast ──
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        // ── Init ──
+        (async () => {
+            const now = new Date();
+            currentYear = now.getFullYear();
+            currentMonth = now.getMonth();
+            await ensureAuth();
+            await loadEvents();
+        })();
+    </script>
+    <script src="/js/hey-lumen.js" defer></script>`n</body>
+</html>

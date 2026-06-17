@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 Lumen</title>
+    <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+    <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body>
+    <div class="header" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">
+        <div><h1 style="color:#a78bfa">🌟 Lumen</h1><div class="sub" id="lumenId">Your Learning Companion</div></div>
+        <div class="header-right"><span id="authButtons"></span></div>
+    </div>
+    <div class="main">
+        <div class="sidebar">
+            <button class="new-chat-btn" style="background:#7c3aed" onclick="newChat()">+ New Chat</button>
+            <div id="threadList"></div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">Quick Actions</div>
+                <a href="#" class="ta-link" onclick="quickAction('How am I doing?');return false">📊 My Progress</a>
+                <a href="#" class="ta-link" onclick="quickAction('Show my peers');return false">👥 Peers</a>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">Teaching Assistants</div>
+                <a href="/ta/math" target="_blank" class="ta-link">📐 Math TA →</a>
+                <a href="/ta/cs" target="_blank" class="ta-link">💻 CS TA →</a>
+                <a href="/ta/calendar" target="_blank" class="ta-link">📅 Calendar →</a>
+            </div>
+        </div>
+        <div class="chat-area">
+            <div class="messages" id="messages"></div>
+            <div class="input-bar">
+                <input type="text" id="chatInput" placeholder="Ask about your progress, or say what you want to learn..." />
+                <button id="sendBtn" onclick="sendMessage()" style="background:#7c3aed">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const CHANNEL = 'lumen';
+        const CHANNEL_META = '🌟 Lumen';
+        const CHAT_ENDPOINT = '/chat';
+        let TOKEN = localStorage.getItem('lumen.token') || localStorage.getItem('lumen_token');
+        let USER = JSON.parse(localStorage.getItem('lumen.user') || localStorage.getItem('lumen_user') || 'null');
+
+        let msalInstance = null;
+        try { msalInstance = new msal.PublicClientApplication({ auth: { clientId:'baabcd68-1c44-44bb-ba2e-c6bbc77b216d', authority:'https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47', redirectUri:window.location.origin+'/demo' }, cache:{cacheLocation:'localStorage'} }); } catch(e){}
+
+        function renderAuth() {
+            const el = document.getElementById('authButtons');
+            if (USER && USER.email !== 'demo@lumen.local') el.innerHTML = `<span style="color:#9ca3af;font-size:12px">${USER.name}</span> <button class="btn-sm" style="background:#374151;color:#9ca3af" onclick="logout()">Logout</button>`;
+            else if (USER) el.innerHTML = `<button class="btn-sm" style="background:#7c3aed;color:#fff" onclick="entraLogin()">🔑 Sign in</button>`;
+            else el.innerHTML = `<button class="btn-sm" style="background:#7c3aed;color:#fff" onclick="entraLogin()">🔑 Sign in</button> <button class="btn-sm" style="background:#1e293b;color:#a78bfa;border:1px solid #a78bfa" onclick="demoLogin()">Demo</button>`;
+        }
+        async function entraLogin() { if(!msalInstance)return; try{ const resp=await msalInstance.loginPopup({scopes:['openid','profile','email']}); const r=await fetch('/auth/entra-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:resp.idToken})}); const d=await r.json(); if(d.token){TOKEN=d.token;USER=d.user;localStorage.setItem('lumen_token',TOKEN);localStorage.setItem('lumen_user',JSON.stringify(USER));personalize(USER.name,false);renderAuth();loadThreads();}}catch(e){alert('Login failed: '+e.message);}}
+        async function demoLogin() { const r=await fetch('/auth/demo-token',{method:'POST'}); const d=await r.json(); TOKEN=d.token;USER=d.user; localStorage.setItem('lumen_token',TOKEN);localStorage.setItem('lumen_user',JSON.stringify(USER)); personalize(USER.name,true);renderAuth(); }
+        function logout() { localStorage.clear(); location.reload(); }
+        function personalize(name,isDemo) { const fn=name.split(' ')[0]; document.title=`Lumen — ${fn}`; document.querySelector('h1').textContent=`🌟 Lumen — ${fn}`; document.getElementById('lumenId').textContent=isDemo?`${name} (demo)`:name; }
+        function isTokenExpired(token) {
+            try { const p=JSON.parse(atob(token.split('.')[1])); return p.exp && (p.exp*1000 < Date.now()); } catch { return true; }
+        }
+        async function ensureAuth() {
+            if(TOKEN && USER && !isTokenExpired(TOKEN)) { personalize(USER.name,USER.email==='demo@lumen.local'); renderAuth(); return; }
+            localStorage.removeItem('lumen_token'); localStorage.removeItem('lumen_user'); TOKEN=null; USER=null;
+            await demoLogin(); renderAuth();
+        }
+        async function api(path,opts={}) {
+            if(!TOKEN || isTokenExpired(TOKEN)) { await ensureAuth(); }
+            const r = await fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`,...(opts.headers||{})}});
+            if(r.status===401) { await ensureAuth(); return fetch(path,{...opts,headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`,...(opts.headers||{})}}); }
+            return r;
+        }
+
+        function stripMd(t) { return t.replace(/#{1,6}\s/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^[-*]\s/gm,'• '); }
+        function addMessage(role,text,meta='') { const clean=stripMd(text); const d=document.createElement('div'); d.className=`msg ${role}`; d.innerHTML=`<div class="bubble">${clean.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>${meta?`<div class="meta">${meta}</div>`:''}`; const c=document.getElementById('messages'); c.appendChild(d); c.scrollTop=c.scrollHeight; }
+        function clearMessages() { document.getElementById('messages').innerHTML=''; }
+
+        async function sendMessage() {
+            const input=document.getElementById('chatInput'); const msg=input.value.trim(); if(!msg) return; input.value=''; input.focus();
+            addMessage('user',msg);
+            const btn=document.getElementById('sendBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+            // Typing indicator
+            const typing=document.createElement('div'); typing.className='msg assistant'; typing.id='typing';
+            typing.innerHTML='<div class="bubble"><div class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>';
+            const mc=document.getElementById('messages'); mc.appendChild(typing); mc.scrollTop=mc.scrollHeight;
+            try {
+                const r=await api(CHAT_ENDPOINT,{method:'POST',body:JSON.stringify({message:msg,thread_id:currentThreadId})});
+                document.getElementById('typing')?.remove();
+                if(!r.ok) { const e=await r.json().catch(()=>({})); addMessage('assistant',`Something went wrong: ${e.detail||r.statusText}. Try refreshing.`); btn.disabled=false; btn.textContent='Send'; return; }
+                const data=await r.json();
+                if(data.thread_id) currentThreadId=data.thread_id;
+                addMessage('assistant',data.reply||'No response',CHANNEL_META);
+                if(data.action==='context_switch'&&data.redirect_url) window.open(data.redirect_url,'_blank');
+                loadThreads();
+            } catch(err) { document.getElementById('typing')?.remove(); addMessage('assistant',`Connection error: ${err.message}`); }
+            btn.disabled=false; btn.textContent='Send';
+        }
+        document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+        function quickAction(msg) { document.getElementById('chatInput').value=msg; sendMessage(); }
+    </script>
+    <script src="/js/chat-sidebar.js"></script>
+    <script>
+        (async()=>{
+            await ensureAuth();
+            await loadThreads();
+            if(threads.length) { await switchThread(threads[0].id); }
+            else { addMessage('assistant',"Hi! I'm your Lumen — your personal learning companion. 🌟\n\nI track your progress across all courses and TAs.\n\nAsk me:\n  📊 \"How am I doing?\" — progress across courses\n  📅 \"Make me a study plan\" — personalized plan\n  🗓️ \"Remind me to study algebra tomorrow at 3pm\" — schedule events\n  👥 \"Show my peers\" — discover other students\n\nOr open a TA from the sidebar.",CHANNEL_META); }
+        })();
+    </script>
+</body>
+</html>

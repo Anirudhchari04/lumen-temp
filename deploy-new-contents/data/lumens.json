@@ -1,0 +1,995 @@
+{
+  "peer-priya": {
+    "id": "peer-priya",
+    "lumen_id": "lumen://default/peer-priya",
+    "name": "Priya S.",
+    "email": "priya@demo.local",
+    "org": "demo",
+    "bio": "",
+    "expertise": "",
+    "interests": "",
+    "preferences": {
+      "language": "English",
+      "pace": "moderate",
+      "explanation": "detailed"
+    },
+    "curriculum_progress": {
+      "math-ta": {
+        "ta_name": "Mathematics TA",
+        "current_level": 3,
+        "current_module": "Linear Algebra",
+        "level_label": "intermediate",
+        "session_count": 22,
+        "topics_covered": [
+          "numbers",
+          "arithmetic",
+          "algebra",
+          "variables",
+          "equations",
+          "functions",
+          "vectors",
+          "matrices"
+        ],
+        "topics_mastered": [
+          "numbers",
+          "arithmetic",
+          "algebra",
+          "variables",
+          "equations"
+        ],
+        "last_summary": "Working on matrix multiplication and linear transformations"
+      },
+      "cs-ta": {
+        "ta_name": "Computer Science TA",
+        "current_level": 2,
+        "current_module": "Functions",
+        "level_label": "beginner",
+        "session_count": 8,
+        "topics_covered": [
+          "variables",
+          "types",
+          "control flow",
+          "loops",
+          "functions"
+        ],
+        "topics_mastered": [
+          "variables",
+          "types",
+          "control flow"
+        ],
+        "last_summary": "Learning function parameters and return values"
+      }
+    },
+    "tc_inventory": {
+      "mastered": [
+        {
+          "tc_id": "math-number-sense",
+          "evidence": "Strong arithmetic",
+          "crossed_at": "2026-03-01",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-variable-as-unknown",
+          "evidence": "Solves multi-step equations",
+          "crossed_at": "2026-03-15",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-function-concept",
+          "evidence": "Understands function notation",
+          "crossed_at": "2026-04-01",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "cs-variables-types",
+          "evidence": "Comfortable with Python types",
+          "crossed_at": "2026-03-20",
+          "source_ta": "cs-ta"
+        }
+      ],
+      "in_progress": [
+        {
+          "tc_id": "math-linear-transform",
+          "progress_pct": 45
+        },
+        {
+          "tc_id": "cs-abstraction",
+          "progress_pct": 30
+        }
+      ]
+    },
+    "session_history": [],
+    "artifacts": [],
+    "social": {
+      "discoverable": true,
+      "share_progress": true
+    },
+    "created_at": "2026-04-20T10:19:19.035715+00:00",
+    "updated_at": "2026-04-20T10:19:19.035715+00:00"
+  },
+  "peer-rahul": {
+    "id": "peer-rahul",
+    "lumen_id": "lumen://default/peer-rahul",
+    "name": "Rahul M.",
+    "email": "rahul@demo.local",
+    "org": "demo",
+    "bio": "",
+    "expertise": "",
+    "interests": "",
+    "preferences": {
+      "language": "English",
+      "pace": "moderate",
+      "explanation": "detailed"
+    },
+    "curriculum_progress": {
+      "math-ta": {
+        "ta_name": "Mathematics TA",
+        "current_level": 4,
+        "current_module": "Calculus I",
+        "level_label": "intermediate",
+        "session_count": 35,
+        "topics_covered": [
+          "numbers",
+          "arithmetic",
+          "algebra",
+          "functions",
+          "vectors",
+          "limits",
+          "derivatives"
+        ],
+        "topics_mastered": [
+          "numbers",
+          "arithmetic",
+          "algebra",
+          "functions",
+          "vectors",
+          "limits"
+        ],
+        "last_summary": "Practicing chain rule and product rule"
+      }
+    },
+    "tc_inventory": {
+      "mastered": [
+        {
+          "tc_id": "math-number-sense",
+          "evidence": "Mastered",
+          "crossed_at": "2026-02-01",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-variable-as-unknown",
+          "evidence": "Mastered",
+          "crossed_at": "2026-02-15",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-function-concept",
+          "evidence": "Mastered",
+          "crossed_at": "2026-03-01",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-linear-transform",
+          "evidence": "Mastered",
+          "crossed_at": "2026-03-20",
+          "source_ta": "math-ta"
+        },
+        {
+          "tc_id": "math-limits",
+          "evidence": "Strong limit intuition",
+          "crossed_at": "2026-04-05",
+          "source_ta": "math-ta"
+        }
+      ],
+      "in_progress": [
+        {
+          "tc_id": "math-derivatives",
+          "progress_pct": 65
+        }
+      ]
+    },
+    "session_history": [],
+    "artifacts": [],
+    "social": {
+      "discoverable": true,
+      "share_progress": true
+    },
+    "created_at": "2026-04-20T10:19:19.051620+00:00",
+    "updated_at": "2026-04-20T10:19:19.051620+00:00"
+  },
+  "peer-maya": {
+    "id": "peer-maya",
+    "lumen_id": "lumen://default/peer-maya",
+    "name": "Maya K.",
+    "email": "maya@demo.local",
+    "org": "demo",
+    "bio": "",
+    "expertise": "",
+    "interests": "",
+    "preferences": {
+      "language": "English",
+      "pace": "moderate",
+      "explanation": "detailed"
+    },
+    "curriculum_progress": {
+      "cs-ta": {
+        "ta_name": "Computer Science TA",
+        "current_level": 4,
+        "current_module": "Algorithms",
+        "level_label": "intermediate",
+        "session_count": 28,
+        "topics_covered": [
+          "variables",
+          "types",
+          "control flow",
+          "loops",
+          "functions",
+          "lists",
+          "dicts",
+          "sorting",
+          "searching",
+          "recursion"
+        ],
+        "topics_mastered": [
+          "variables",
+          "types",
+          "functions",
+          "lists",
+          "dicts",
+          "sorting"
+        ],
+        "last_summary": "Implementing recursive algorithms and analyzing Big-O"
+      },
+      "math-ta": {
+        "ta_name": "Mathematics TA",
+        "current_level": 2,
+        "current_module": "Algebra",
+        "level_label": "beginner",
+        "session_count": 5,
+        "topics_covered": [
+          "numbers",
+          "arithmetic",
+          "variables"
+        ],
+        "topics_mastered": [
+          "numbers",
+          "arithmetic"
+        ],
+        "last_summary": "Starting algebraic expressions"
+      }
+    },
+    "tc_inventory": {
+      "mastered": [
+        {
+          "tc_id": "cs-variables-types",
+          "evidence": "Mastered",
+          "crossed_at": "2026-02-10",
+          "source_ta": "cs-ta"
+        },
+        {
+          "tc_id": "cs-abstraction",
+          "evidence": "Mastered",
+          "crossed_at": "2026-03-01",
+          "source_ta": "cs-ta"
+        },
+        {
+          "tc_id": "cs-data-structures",
+          "evidence": "Mastered",
+          "crossed_at": "2026-03-20",
+          "source_ta": "cs-ta"
+        },
+        {
+          "tc_id": "math-number-sense",
+          "evidence": "Mastered",
+          "crossed_at": "2026-03-15",
+          "source_ta": "math-ta"
+        }
+      ],
+      "in_progress": [
+        {
+          "tc_id": "cs-recursion",
+          "progress_pct": 55
+        },
+        {
+          "tc_id": "cs-big-o",
+          "progress_pct": 40
+        },
+        {
+          "tc_id": "math-variable-as-unknown",
+          "progress_pct": 20
+        }
+      ]
+    },
+    "session_history": [],
+    "artifacts": [],
+    "social": {
+      "discoverable": true,
+      "share_progress": true
+    },
+    "created_at": "2026-04-20T10:19:19.065402+00:00",
+    "updated_at": "2026-04-20T10:19:19.065402+00:00"
+  },
+  "peer-arjun": {
+    "id": "peer-arjun",
+    "lumen_id": "lumen://default/peer-arjun",
+    "name": "Arjun T.",
+    "email": "arjun@demo.local",
+    "org": "demo",
+    "bio": "",
+    "expertise": "",
+    "interests": "",
+    "preferences": {
+      "language": "English",
+      "pace": "moderate",
+      "explanation": "detailed"
+    },
+    "curriculum_progress": {
+      "math-ta": {
+        "ta_name": "Mathematics TA",
+        "current_level": 1,
+        "current_module": "Foundations",
+        "level_label": "beginner",
+        "session_count": 3,
+        "topics_covered": [
+          "numbers",
+          "arithmetic"
+        ],
+        "topics_mastered": [
+          "numbers"
+        ],
+        "last_summary": "Practicing basic arithmetic"
+      },
+      "cs-ta": {
+        "ta_name": "Computer Science TA",
+        "current_level": 1,
+        "current_module": "Basics",
+        "level_label": "beginner",
+        "session_count": 2,
+        "topics_covered": [
+          "variables"
+        ],
+        "topics_mastered": [],
+        "last_summary": "Just started learning Python variables"
+      }
+    },
+    "tc_inventory": {
+      "mastered": [],
+      "in_progress": [
+        {
+          "tc_id": "math-number-sense",
+          "progress_pct": 35
+        },
+        {
+          "tc_id": "cs-variables-types",
+          "progress_pct": 10
+        }
+      ]
+    },
+    "session_history": [],
+    "artifacts": [],
+    "social": {
+      "discoverable": true,
+      "share_progress": true
+    },
+    "created_at": "2026-04-20T10:19:19.072107+00:00",
+    "updated_at": "2026-04-20T10:19:19.072107+00:00"
+  },
+  "user-alice": {
+    "id": "user-alice",
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "lumen_id": "lumen-alice",
+    "progress": {},
+    "token_usage": {
+      "lifetime": {
+        "total": 6380,
+        "prompt": 2800,
+        "completion": 3580,
+        "calls": 8,
+        "latency_ms_sum": 0.0,
+        "cost_usd": 0.002569
+      },
+      "daily": {
+        "2026-06-08": {
+          "total": 6380,
+          "prompt": 2800,
+          "completion": 3580,
+          "calls": 8,
+          "latency_ms_sum": 0.0
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-router": {
+            "total": 1130,
+            "prompt": 600,
+            "completion": 530,
+            "calls": 2,
+            "latency_ms_sum": 0.0
+          },
+          "lumen-chat": {
+            "total": 1050,
+            "prompt": 450,
+            "completion": 600,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "communication": {
+            "total": 1800,
+            "prompt": 700,
+            "completion": 1100,
+            "calls": 2,
+            "latency_ms_sum": 0.0
+          },
+          "calendar": {
+            "total": 250,
+            "prompt": 150,
+            "completion": 100,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "notion": {
+            "total": 2000,
+            "prompt": 800,
+            "completion": 1200,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "social": {
+            "total": 150,
+            "prompt": 100,
+            "completion": 50,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          }
+        },
+        "daily": {
+          "2026-06-08": {
+            "lumen-router": {
+              "total": 1130,
+              "prompt": 600,
+              "completion": 530,
+              "calls": 2,
+              "latency_ms_sum": 0.0
+            },
+            "lumen-chat": {
+              "total": 1050,
+              "prompt": 450,
+              "completion": 600,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "communication": {
+              "total": 1800,
+              "prompt": 700,
+              "completion": 1100,
+              "calls": 2,
+              "latency_ms_sum": 0.0
+            },
+            "calendar": {
+              "total": 250,
+              "prompt": 150,
+              "completion": 100,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "notion": {
+              "total": 2000,
+              "prompt": 800,
+              "completion": 1200,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "social": {
+              "total": 150,
+              "prompt": 100,
+              "completion": 50,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            }
+          }
+        }
+      }
+    },
+    "updated_at": "2026-06-08T10:00:48.092980+00:00"
+  },
+  "user-bob": {
+    "id": "user-bob",
+    "name": "Bob Chen",
+    "email": "bob@example.com",
+    "lumen_id": "lumen-bob",
+    "progress": {},
+    "token_usage": {
+      "lifetime": {
+        "total": 9650,
+        "prompt": 4200,
+        "completion": 5450,
+        "calls": 6,
+        "latency_ms_sum": 0.0,
+        "cost_usd": 0.0039
+      },
+      "daily": {
+        "2026-06-08": {
+          "total": 9650,
+          "prompt": 4200,
+          "completion": 5450,
+          "calls": 6,
+          "latency_ms_sum": 0.0
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-router": {
+            "total": 450,
+            "prompt": 300,
+            "completion": 150,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "lumen-chat": {
+            "total": 900,
+            "prompt": 400,
+            "completion": 500,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "arxiv": {
+            "total": 6500,
+            "prompt": 2700,
+            "completion": 3800,
+            "calls": 2,
+            "latency_ms_sum": 0.0
+          },
+          "drive": {
+            "total": 1500,
+            "prompt": 600,
+            "completion": 900,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "wolfram": {
+            "total": 300,
+            "prompt": 200,
+            "completion": 100,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          }
+        },
+        "daily": {
+          "2026-06-08": {
+            "lumen-router": {
+              "total": 450,
+              "prompt": 300,
+              "completion": 150,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "lumen-chat": {
+              "total": 900,
+              "prompt": 400,
+              "completion": 500,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "arxiv": {
+              "total": 6500,
+              "prompt": 2700,
+              "completion": 3800,
+              "calls": 2,
+              "latency_ms_sum": 0.0
+            },
+            "drive": {
+              "total": 1500,
+              "prompt": 600,
+              "completion": 900,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "wolfram": {
+              "total": 300,
+              "prompt": 200,
+              "completion": 100,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            }
+          }
+        }
+      }
+    },
+    "updated_at": "2026-06-08T10:00:48.112119+00:00"
+  },
+  "user-carol": {
+    "id": "user-carol",
+    "name": "Carol Patel",
+    "email": "carol@example.com",
+    "lumen_id": "lumen-carol",
+    "progress": {},
+    "token_usage": {
+      "lifetime": {
+        "total": 4800,
+        "prompt": 2080,
+        "completion": 2720,
+        "calls": 6,
+        "latency_ms_sum": 0.0,
+        "cost_usd": 0.001945
+      },
+      "daily": {
+        "2026-06-08": {
+          "total": 4800,
+          "prompt": 2080,
+          "completion": 2720,
+          "calls": 6,
+          "latency_ms_sum": 0.0
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-router": {
+            "total": 370,
+            "prompt": 250,
+            "completion": 120,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "lumen-chat": {
+            "total": 750,
+            "prompt": 350,
+            "completion": 400,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "calendar": {
+            "total": 1180,
+            "prompt": 480,
+            "completion": 700,
+            "calls": 2,
+            "latency_ms_sum": 0.0
+          },
+          "communication": {
+            "total": 1500,
+            "prompt": 600,
+            "completion": 900,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          },
+          "gmail": {
+            "total": 1000,
+            "prompt": 400,
+            "completion": 600,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          }
+        },
+        "daily": {
+          "2026-06-08": {
+            "lumen-router": {
+              "total": 370,
+              "prompt": 250,
+              "completion": 120,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "lumen-chat": {
+              "total": 750,
+              "prompt": 350,
+              "completion": 400,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "calendar": {
+              "total": 1180,
+              "prompt": 480,
+              "completion": 700,
+              "calls": 2,
+              "latency_ms_sum": 0.0
+            },
+            "communication": {
+              "total": 1500,
+              "prompt": 600,
+              "completion": 900,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            },
+            "gmail": {
+              "total": 1000,
+              "prompt": 400,
+              "completion": 600,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            }
+          }
+        }
+      }
+    },
+    "updated_at": "2026-06-08T10:00:48.149867+00:00"
+  },
+  "u1": {
+    "id": "u1",
+    "name": "Test",
+    "email": "t@e.com",
+    "lumen_id": "l1",
+    "progress": {},
+    "token_usage": {
+      "lifetime": {
+        "total": 3050,
+        "prompt": 1250,
+        "completion": 1800,
+        "calls": 2
+      },
+      "daily": {
+        "2026-06-04": {
+          "total": 3050,
+          "prompt": 1250,
+          "completion": 1800,
+          "calls": 2
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-chat": {
+            "total": 1050,
+            "prompt": 450,
+            "completion": 600,
+            "calls": 1
+          },
+          "notion": {
+            "total": 2000,
+            "prompt": 800,
+            "completion": 1200,
+            "calls": 1
+          }
+        },
+        "daily": {
+          "2026-06-04": {
+            "lumen-chat": {
+              "total": 1050,
+              "prompt": 450,
+              "completion": 600,
+              "calls": 1
+            },
+            "notion": {
+              "total": 2000,
+              "prompt": 800,
+              "completion": 1200,
+              "calls": 1
+            }
+          }
+        }
+      }
+    },
+    "updated_at": "2026-06-04T05:59:45.511082+00:00"
+  },
+  "u2": {
+    "id": "u2",
+    "name": "T",
+    "email": "t@e.com",
+    "lumen_id": "l2",
+    "progress": {},
+    "token_usage": {
+      "lifetime": {
+        "total": 4050,
+        "prompt": 1670,
+        "completion": 2380,
+        "calls": 3,
+        "latency_ms_sum": 5200.0
+      },
+      "daily": {
+        "2026-06-04": {
+          "total": 4050,
+          "prompt": 1670,
+          "completion": 2380,
+          "calls": 3,
+          "latency_ms_sum": 5200.0
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-chat": {
+            "total": 2050,
+            "prompt": 870,
+            "completion": 1180,
+            "calls": 2,
+            "latency_ms_sum": 2600.0
+          },
+          "notion": {
+            "total": 2000,
+            "prompt": 800,
+            "completion": 1200,
+            "calls": 1,
+            "latency_ms_sum": 2600.0
+          }
+        },
+        "daily": {
+          "2026-06-04": {
+            "lumen-chat": {
+              "total": 2050,
+              "prompt": 870,
+              "completion": 1180,
+              "calls": 2,
+              "latency_ms_sum": 2600.0
+            },
+            "notion": {
+              "total": 2000,
+              "prompt": 800,
+              "completion": 1200,
+              "calls": 1,
+              "latency_ms_sum": 2600.0
+            }
+          }
+        }
+      }
+    },
+    "updated_at": "2026-06-04T06:15:52.483891+00:00"
+  },
+  "spike-test-user": {
+    "id": "spike-test-user",
+    "name": "Spike Test",
+    "token_usage": {
+      "lifetime": {
+        "total": 22850,
+        "prompt": 11100,
+        "completion": 11750,
+        "calls": 9,
+        "latency_ms_sum": 0.0,
+        "cost_usd": 0.117535
+      },
+      "daily": {
+        "2026-06-08": {
+          "total": 22850,
+          "prompt": 11100,
+          "completion": 11750,
+          "calls": 9,
+          "latency_ms_sum": 0.0
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-router": {
+            "total": 3000,
+            "prompt": 1800,
+            "completion": 1200,
+            "calls": 6,
+            "latency_ms_sum": 0.0
+          },
+          "lumen-chat": {
+            "total": 19700,
+            "prompt": 9200,
+            "completion": 10500,
+            "calls": 2,
+            "latency_ms_sum": 0.0
+          },
+          "calendar": {
+            "total": 150,
+            "prompt": 100,
+            "completion": 50,
+            "calls": 1,
+            "latency_ms_sum": 0.0
+          }
+        },
+        "daily": {
+          "2026-06-08": {
+            "lumen-router": {
+              "total": 3000,
+              "prompt": 1800,
+              "completion": 1200,
+              "calls": 6,
+              "latency_ms_sum": 0.0
+            },
+            "lumen-chat": {
+              "total": 19700,
+              "prompt": 9200,
+              "completion": 10500,
+              "calls": 2,
+              "latency_ms_sum": 0.0
+            },
+            "calendar": {
+              "total": 150,
+              "prompt": 100,
+              "completion": 50,
+              "calls": 1,
+              "latency_ms_sum": 0.0
+            }
+          }
+        }
+      },
+      "spikes": [
+        {
+          "id": "60f52c9770eb",
+          "ts": "2026-06-08T10:00:31.031711+00:00",
+          "source": "lumen-chat",
+          "model": "gpt-5.4",
+          "prompt": 1200,
+          "completion": 1500,
+          "total": 2700,
+          "cost_usd": 0.0165,
+          "baseline_avg_usd": 0.000165,
+          "reason": "100.0× your average call cost ($0.0002)",
+          "read": false
+        },
+        {
+          "id": "7e339c256659",
+          "ts": "2026-06-08T10:00:31.043395+00:00",
+          "source": "lumen-chat",
+          "model": "gpt-5.4",
+          "prompt": 8000,
+          "completion": 9000,
+          "total": 17000,
+          "cost_usd": 0.1,
+          "baseline_avg_usd": 0.002499,
+          "reason": "costs $0.1000 — over the $0.05 per-call ceiling",
+          "read": true
+        }
+      ]
+    },
+    "updated_at": "2026-06-08T10:00:31.046240+00:00"
+  },
+  "verify-user": {
+    "id": "verify-user",
+    "lumen_id": "lumen://default/verify-user",
+    "name": "Verify",
+    "email": "verify@example.com",
+    "org": "example.com",
+    "bio": "",
+    "expertise": "",
+    "interests": "",
+    "preferences": {
+      "language": "English",
+      "pace": "moderate",
+      "explanation": "detailed"
+    },
+    "curriculum_progress": {},
+    "tc_inventory": {
+      "mastered": [],
+      "in_progress": []
+    },
+    "session_history": [],
+    "artifacts": [],
+    "social": {
+      "discoverable": true,
+      "share_progress": true
+    },
+    "created_at": "2026-06-11T05:46:49.608170+00:00",
+    "updated_at": "2026-06-11T05:47:44.515838+00:00",
+    "token_usage": {
+      "lifetime": {
+        "total": 3114,
+        "prompt": 3069,
+        "completion": 45,
+        "calls": 2,
+        "latency_ms_sum": 35532.36449999986,
+        "cost_usd": 0.000487
+      },
+      "daily": {
+        "2026-06-11": {
+          "total": 3114,
+          "prompt": 3069,
+          "completion": 45,
+          "calls": 2,
+          "latency_ms_sum": 35532.36449999986
+        }
+      },
+      "by_source": {
+        "lifetime": {
+          "lumen-router": {
+            "total": 3114,
+            "prompt": 3069,
+            "completion": 45,
+            "calls": 2,
+            "latency_ms_sum": 35532.36449999986
+          }
+        },
+        "daily": {
+          "2026-06-11": {
+            "lumen-router": {
+              "total": 3114,
+              "prompt": 3069,
+              "completion": 45,
+              "calls": 2,
+              "latency_ms_sum": 35532.36449999986
+            }
+          }
+        }
+      }
+    }
+  }
+}
