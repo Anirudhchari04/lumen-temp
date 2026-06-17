@@ -38,6 +38,7 @@ frontend/dist/
 # Azure / deploy artifacts
 deploy-out.txt
 *.zip
+deploy-new-contents/
 
 # OS
 .DS_Store
