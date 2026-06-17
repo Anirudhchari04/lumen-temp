@@ -1483,14 +1483,14 @@ async def _handle_launch(target: str) -> dict:
             "agent_id": "coding-ta",
             "redirect_url": "/coding-ta",
         }
-    # GitHub agent opens in-app — explore repos, commits, files, and your portfolio.
+    # GitHub agent opens as a separate standalone page (full page load, new tab).
     if target in ("github", "portfolio"):
         return {
-            "reply": "Opening the GitHub agent — explore your repos, commits, branches, pull requests, files, and learning portfolio.",
-            "action": "context_switch",
+            "reply": "Opening the GitHub Repo Explorer — explore your repos, commits, branches, pull requests, files, and learning portfolio.",
+            "action": "external_launch",
             "intent": Intent.LAUNCH,
             "agent_id": "github",
-            "redirect_url": "/github",
+            "redirect_url": "/github-explorer",
         }
     card = get_agent_card(target) if target and target != "calendar" else None
     name = card.name if card else target.replace("-", " ").title()
