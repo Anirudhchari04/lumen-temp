@@ -131,6 +131,7 @@ from app.routes.coding_ta import router as coding_ta_router
 from app.routes.shiksha import router as shiksha_router
 from app.routes.notion import router as notion_router
 from app.routes.google import router as google_router
+from app.routes.github_explorer import router as github_explorer_router
 
 app.include_router(auth_router, prefix="/auth")
 app.include_router(chat_router, prefix="/chat")
@@ -145,6 +146,8 @@ app.include_router(shiksha_router, prefix="/shiksha")
 # Notion + Google routes carry their own /auth/* and /lumen/* prefixes
 app.include_router(notion_router)
 app.include_router(google_router)
+# Standalone GitHub Repo Explorer (separate page, mounted under /github-explorer)
+app.include_router(github_explorer_router, prefix="/github-explorer")
 
 # ── Lumen v2 (Magentic-One) — additive mount; never alters v1 routes ─────────
 # Guarded so a missing/broken v2 (e.g. autogen not installed) can never affect v1.
@@ -1153,6 +1156,16 @@ async def calendar_page():
     return FileResponse(os.path.join(_public, "ta-calendar.html"))
 
 
+# Standalone GitHub Repo Explorer page (separate from the React SPA).
+_github_explorer_dir = os.path.join(_public, "github-explorer")
+
+
+@app.get("/github-explorer")
+async def github_explorer_page():
+    return FileResponse(os.path.join(_github_explorer_dir, "index.html"),
+                        headers={"Cache-Control": "no-store, must-revalidate"})
+
+
 # Static files last
 # 1) React build: assets under /assets/* and SPA fallback routes for client-side pages.
 if os.path.exists(_frontend_dist):
@@ -1188,6 +1201,11 @@ if os.path.exists(_public):
         app.mount("/css", StaticFiles(directory=_css_dir), name="legacy-css")
     if os.path.isdir(_js_dir):
         app.mount("/js", StaticFiles(directory=_js_dir), name="legacy-js")
+    # Standalone GitHub Explorer assets (app.js, style.css)
+    if os.path.isdir(_github_explorer_dir):
+        app.mount("/github-explorer/static",
+                  StaticFiles(directory=_github_explorer_dir),
+                  name="github-explorer-static")
 
 
 if __name__ == "__main__":

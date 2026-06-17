@@ -401,6 +401,14 @@ def _looks_like_portfolio(msg: str) -> bool:
     return any(kw in msg for kw in _PORTFOLIO_KW)
 
 
+def _looks_like_open_github(msg: str) -> bool:
+    """True when the user wants to open/launch the GitHub Explorer page."""
+    triggers = ("open github", "launch github", "open the github", "go to github",
+                "open repo explorer", "open the repo explorer", "github explorer",
+                "open github explorer", "take me to github")
+    return any(t in msg for t in triggers)
+
+
 # ── Public entry point ──────────────────────────────────────────────────────
 
 async def handle_github(user_id: str, message: str) -> dict:
@@ -410,6 +418,21 @@ async def handle_github(user_id: str, message: str) -> dict:
     from app.agents.interaction_manager import _handle_portfolio
 
     msg = (message or "").lower().strip()
+
+    # "Open GitHub" → redirect to the standalone GitHub Repo Explorer page.
+    if _looks_like_open_github(msg):
+        return {
+            "reply": "Opening the GitHub Repo Explorer…",
+            "action": "redirect",
+            "url": "/github-explorer",
+            "intent": "portfolio",
+            "agent_id": AGENT_ID,
+            "cards": [{"type": "redirect", "data": {
+                "url": "/github-explorer",
+                "label": "Open GitHub Repo Explorer",
+                "target": "_blank",
+            }}],
+        }
 
     # Connection gate (mirror the portfolio connect card).
     status = await get_portfolio_status(user_id)
