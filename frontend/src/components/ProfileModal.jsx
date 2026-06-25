@@ -31,6 +31,14 @@ export default function ProfileModal({ open, onClose, onSaved }) {
     preferences: { pace: 'moderate', explanation: 'detailed' },
   })
 
+  // Shareable Lumen link state
+  const [username, setUsernameState] = useState('')
+  const [shareUrl, setShareUrl]      = useState('')
+  const [usernameInput, setUsernameInput] = useState('')
+  const [shareBusy, setShareBusy]    = useState(false)
+  const [shareErr, setShareErr]      = useState('')
+  const [copied, setCopied]          = useState(false)
+
   // GitHub portfolio state
   const [ghOwner, setGhOwner]             = useState('')
   const [ghStatus, setGhStatus]           = useState(null)
@@ -86,6 +94,11 @@ export default function ProfileModal({ open, onClose, onSaved }) {
           preferences: { ...cur.preferences, ...(r?.preferences || {}) },
         }))
       }),
+      api.myShare().then(s => {
+        setUsernameState(s?.username || '')
+        setShareUrl(s?.share_url || '')
+        setUsernameInput(s?.username || '')
+      }).catch(() => {}),
       loadGhStatus(),
       fetch('/lumen/email/connection-status', {
         headers: { Authorization: `Bearer ${localStorage.getItem('lumen.token')}` }
@@ -197,6 +210,27 @@ export default function ProfileModal({ open, onClose, onSaved }) {
     finally { setEmailDisconnecting(false) }
   }
 
+  const saveUsername = async () => {
+    const u = (usernameInput || '').trim().toLowerCase()
+    if (!u || u === username) return
+    setShareBusy(true); setShareErr('')
+    try {
+      const r = await api.setUsername(u)
+      setUsernameState(r?.username || u)
+      setShareUrl(r?.share_url || '')
+      setUsernameInput(r?.username || u)
+    } catch (e) {
+      const m = (e?.message || '')
+      setShareErr(m.includes('409') || m.toLowerCase().includes('taken')
+        ? 'That username is already taken'
+        : 'Use 3\u201330 lowercase letters, numbers or hyphens (not a reserved word).')
+    } finally { setShareBusy(false) }
+  }
+
+  const copyShare = async () => {
+    try { await navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {}
+  }
+
   const save = async () => {
     setSaving(true); setErr('')
     try {
@@ -242,6 +276,40 @@ export default function ProfileModal({ open, onClose, onSaved }) {
                 <input value={p.name} onChange={e => patch('name', e.target.value)}
                   className="w-full rounded-inner bg-beige-50 border border-beige-200 px-3 py-2 text-[13px] outline-none focus:border-amber" />
               </Field>
+
+              {/* Shareable Lumen link */}
+              <div className="pt-3 border-t border-beige-100">
+                <div className="text-[12px] font-medium text-ink">Your Lumen link</div>
+                <div className="text-2xs text-ink-muted mt-0.5">
+                  Share this so others can reach your Lumen. Your own link opens your Lumen;
+                  someone else opening it lands in peer-to-peer chat with you.
+                </div>
+                {shareUrl && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input readOnly value={shareUrl} onFocus={e => e.target.select()}
+                      className="flex-1 rounded-inner bg-beige-50 border border-beige-200 px-3 py-2 text-[12px] text-ink-soft outline-none" />
+                    <button onClick={copyShare}
+                      className="px-3 py-2 rounded-inner bg-ink text-white text-[12px] shrink-0">
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex-1 flex items-center rounded-inner bg-beige-50 border border-beige-200 px-3">
+                    <span className="text-[12px] text-ink-muted select-none">@</span>
+                    <input value={usernameInput}
+                      onChange={e => setUsernameInput(e.target.value)}
+                      placeholder="choose-a-username"
+                      className="flex-1 bg-transparent py-2 text-[13px] outline-none" />
+                  </div>
+                  <button onClick={saveUsername}
+                    disabled={shareBusy || !usernameInput.trim() || usernameInput.trim().toLowerCase() === username}
+                    className="px-3 py-2 rounded-inner bg-ink text-white text-[12px] shrink-0 disabled:opacity-40">
+                    {shareBusy ? '\u2026' : (username ? 'Update' : 'Claim')}
+                  </button>
+                </div>
+                {shareErr && <div className="text-2xs text-rose-600 mt-1">{shareErr}</div>}
+              </div>
 
               <FieldWithToggle
                 label="Short bio" hint="One or two lines about you."
