@@ -9,7 +9,7 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.agents.interaction_manager import dispatch, dispatch_to_ta, confirm_study_plan
 from app.lumen.core import get_or_create_lumen, update_progress
 from app.db.cosmos import (

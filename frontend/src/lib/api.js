@@ -86,6 +86,19 @@ export const api = {
     authed('/lumen/message', { method: 'POST', body: JSON.stringify({ to_id, message }) }),
   peerMessages:    () => authed('/lumen/messages'),
 
+  // Peer-chat: constrained channel — only the peer's Lumen, no caller agents.
+  peerChatThread:  (peer_id) => authed(`/lumen/peer-chat/${encodeURIComponent(peer_id)}`),
+  peerChatSend:    (peer_id, message) =>
+    authed(`/lumen/peer-chat/${encodeURIComponent(peer_id)}`,
+           { method: 'POST', body: JSON.stringify({ message }) }),
+
+  // Shareable Lumen links (username-based)
+  myShare:         () => authed('/lumen/me/share'),
+  setUsername:     (username) =>
+    authed('/lumen/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),
+  // Resolve a shared link for the signed-in visitor → { relationship: 'self'|'peer', target_id, ... }
+  lumenLink:       (username) => authed(`/lumen/link/${encodeURIComponent(username)}`),
+
   // Private-info requests (Lumen-mediated)
   requestInfo:     (to_id, field, reason) =>
     authed('/lumen/info-request', { method: 'POST', body: JSON.stringify({ to_id, field, reason }) }),

@@ -5,11 +5,13 @@ import IconRail from './components/IconRail.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Peers from './pages/Peers.jsx'
+import PeerChat from './pages/PeerChat.jsx'
 import Privacy from './pages/Privacy.jsx'
 import Usage from './pages/Usage.jsx'
 import CodingTA from './pages/CodingTA.jsx'
 import TAPanel from './pages/TAPanel.jsx'
 import Login from './pages/Login.jsx'
+import LumenLink from './pages/LumenLink.jsx'
 import ExternalOAuthCallback from './pages/ExternalOAuthCallback.jsx'
 import OutlookSignInHelper from './pages/OutlookSignInHelper.jsx'
 import EntraCallback from './pages/EntraCallback.jsx'
@@ -70,6 +72,16 @@ function useTheme() {
 function AppShell() {
   const nav = useNavigate()
   const loc = useLocation()
+
+  // After login (which always returns to "/"), resume any pending share link.
+  useEffect(() => {
+    const pending = localStorage.getItem('lumen.pendingLink')
+    if (pending) {
+      localStorage.removeItem('lumen.pendingLink')
+      nav(`/u/${pending}`, { replace: true })
+    }
+  }, [])
+
   const isV2 = loc.pathname === '/v2' || loc.pathname.startsWith('/v2/')
   const session = useLumenSession({
     onNavigate: (url) => nav(url),
@@ -101,6 +113,7 @@ function AppShell() {
         {/* Lumen v2 — same Dashboard + login, Magentic-One backend, v2 theme. */}
         <Route path="/v2"         element={<Dashboard session={session} user={user} isDark={isDark} onToggleTheme={toggle} />} />
         <Route path="/peers"      element={<Peers user={user} />} />
+        <Route path="/peer-chat/:peerId" element={<PeerChat user={user} />} />
         <Route path="/privacy"    element={<Privacy user={user} />} />
         {/* GitHub agent lives as a standalone page outside the SPA. Both legacy
             routes do a full-page redirect to it. */}
@@ -115,7 +128,33 @@ function AppShell() {
   )
 }
 
+// Detect a Lumen subdomain link, e.g. `manohar.lumen.org` → "manohar".
+// Returns null for apex/known hosts (www, app, localhost, *.azurewebsites.net).
+const LUMEN_BASE_DOMAINS = ['lumen.org', 'lumen.com']
+function lumenSubdomain() {
+  const host = (window.location.hostname || '').toLowerCase()
+  for (const base of LUMEN_BASE_DOMAINS) {
+    if (host.endsWith('.' + base)) {
+      const label = host.slice(0, -(base.length + 1))
+      if (label && !label.includes('.') && !['www', 'app', 'api'].includes(label)) {
+        return label
+      }
+    }
+  }
+  return null
+}
+
 export default function App() {
+  const nav = useNavigate()
+
+  // Subdomain share links (manohar.lumen.org) → resolve via the /u/:username flow.
+  useEffect(() => {
+    const sub = lumenSubdomain()
+    if (sub && window.location.pathname === '/') {
+      nav(`/u/${sub}`, { replace: true })
+    }
+  }, [])
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -128,6 +167,9 @@ export default function App() {
       <Route path="/auth/github-callback" element={<GitHubCallback />} />
       {/* Guided Outlook sign-in popup — opens Microsoft login + token paste flow */}
       <Route path="/outlook-signin" element={<OutlookSignInHelper />} />
+      {/* Shareable Lumen link (own link → own interface, peer link → P2P comms).
+          Must be outside <Protected> so it can stash the target before login. */}
+      <Route path="/u/:username" element={<LumenLink />} />
       <Route path="/*" element={<Protected><AppShell /></Protected>} />
     </Routes>
   )

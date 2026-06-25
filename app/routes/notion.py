@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.config import settings
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.lumen.core import get_lumen
 from app.agents.notion_agent import (
     is_notion_connected,

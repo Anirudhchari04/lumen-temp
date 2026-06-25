@@ -1,4 +1,10 @@
-"""Auth middleware — JWT verification. Entra ID only, no API keys."""
+"""Auth dependencies — JWT verification helpers. Entra ID only, no API keys.
+
+NOTE: These are FastAPI *dependencies* (used via `Depends(...)`) and plain
+helper functions — NOT ASGI/Starlette middleware. They were previously
+mislabeled under `app/middleware/`. The only real middleware in this app is
+CORS, registered in `app/main.py`.
+"""
 
 from __future__ import annotations
 

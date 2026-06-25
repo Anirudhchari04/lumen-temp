@@ -14,19 +14,7 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.teams import MagenticOneGroupChat
 
 from v2 import config
-from v2.agents import (
-    arxiv_agent,
-    calendar_agent,
-    communication_agent,
-    drive_agent,
-    general_agent,
-    github_agent,
-    gmail_agent,
-    graph_agent,
-    notion_agent,
-    shiksha_agent,
-    wolfram_agent,
-)
+from v2.agents import registry
 
 logger = logging.getLogger("lumen.v2.runtime")
 
@@ -35,23 +23,11 @@ def build_specialist_agents(user_id: str, user_info: dict, model_client,
                             graph_token: str | None = None) -> list[AssistantAgent]:
     """Instantiate every specialist agent bound to the current user.
 
-    Names match v1 agent ids: general, communication, calendar, github,
-    shiksha, graph, gmail, drive, notion, arxiv, wolfram, social.
+    The roster is declared once in v2.agents.registry.SPECIALISTS; names match
+    v1 agent ids: general, communication, calendar, github, shiksha, graph,
+    gmail, drive, notion, arxiv, wolfram, social.
     """
-    return [
-        general_agent.build(user_id, user_info, model_client),
-        communication_agent.build(user_id, user_info, model_client),
-        calendar_agent.build(user_id, user_info, model_client),
-        github_agent.build(user_id, user_info, model_client),
-        shiksha_agent.build(user_id, user_info, model_client),
-        graph_agent.build(user_id, user_info, model_client, graph_token),
-        gmail_agent.build(user_id, user_info, model_client),
-        drive_agent.build(user_id, user_info, model_client),
-        notion_agent.build(user_id, user_info, model_client),
-        arxiv_agent.build(user_id, user_info, model_client),
-        wolfram_agent.build(user_id, user_info, model_client),
-        general_agent.build_social(user_id, user_info, model_client),
-    ]
+    return registry.build_all(user_id, user_info, model_client, graph_token)
 
 
 def build_team(user_id: str, user_info: dict, model_client,

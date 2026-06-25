@@ -18,7 +18,7 @@ import traceback
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 
 logger = logging.getLogger("lumen.v2.router")
 router = APIRouter(tags=["lumen-v2"])
@@ -38,6 +38,7 @@ class ChatBody(BaseModel):
 async def health():
     """200 OK with v2 config echo. Safe to call without credentials."""
     from v2 import config, ledger
+    from v2.agents.registry import SPECIALIST_NAMES
 
     await ledger.ensure_ready()
     return {
@@ -49,10 +50,7 @@ async def health():
         "azure_openai_configured": bool(config.AZURE_OPENAI_ENDPOINT),
         "sessions_container": config.V2_SESSIONS_CONTAINER,
         "cosmos_ready": ledger.is_ready(),
-        "specialists": [
-            "general", "communication", "calendar", "portfolio", "shiksha",
-            "graph", "gmail", "drive", "notion", "arxiv", "wolfram", "social",
-        ],
+        "specialists": SPECIALIST_NAMES,
     }
 
 

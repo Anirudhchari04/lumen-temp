@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import TopStrip from '../components/TopStrip.jsx'
 import LoadingDots from '../components/LoadingDots.jsx'
 import MessageBubble from '../components/MessageBubble.jsx'
@@ -6,10 +7,11 @@ import { IconClose, IconArrowUp } from '../components/icons.jsx'
 import { api } from '../lib/api.js'
 
 export default function Peers({ user }) {
+  const loc = useLocation()
+  const nav = useNavigate()
   const [peers, setPeers]     = useState([])
   const [loading, setLoad]    = useState(true)
   const [err, setErr]         = useState('')
-  const [messagePeer, setMP]  = useState(null)
   const [threads, setThreads] = useState([])   // inbox + sent
   const [toast, setToast]     = useState('')
 
@@ -32,6 +34,17 @@ export default function Peers({ user }) {
     })
     return () => { cancel = true }
   }, [])
+
+  // Arriving from a shared peer link now goes directly to /peer-chat via LumenLink;
+  // this handler is kept for any legacy nav-state that sets openPeerId.
+  useEffect(() => {
+    const openPeerId = loc.state?.openPeerId
+    if (!openPeerId) return
+    nav(`/peer-chat/${encodeURIComponent(openPeerId)}`, {
+      replace: true,
+      state: { peerName: loc.state?.openPeerName },
+    })
+  }, [loc.state])
 
   const refreshThreads = async () => {
     try {
@@ -66,25 +79,12 @@ export default function Peers({ user }) {
                 key={p.id || p.email}
                 p={p}
                 unread={threads.filter(m => m.from_id === p.id && !m.read).length}
-                onMessage={() => setMP(p)}
+                onMessage={() => nav(`/peer-chat/${encodeURIComponent(p.id)}`, { state: { peerName: p.name } })}
               />
             ))}
           </div>
         )}
       </div>
-
-      {messagePeer && (
-        <MessageDrawer
-          peer={messagePeer}
-          meId={user?.id}
-          existing={threads.filter(m =>
-            (m.from_id === messagePeer.id && m.to_id === user?.id) ||
-            (m.to_id === messagePeer.id && m.from_id === user?.id)
-          )}
-          onClose={() => setMP(null)}
-          onSent={async () => { await refreshThreads(); setToast('Delivered to their Lumen'); setTimeout(() => setToast(''), 2500) }}
-        />
-      )}
 
       {toast && (
         <div className="fixed bottom-6 right-6 z-40 bg-ink text-white text-[12.5px] px-3 py-2 rounded-inner">

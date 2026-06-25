@@ -22,9 +22,10 @@ def main() -> int:
     from v2.agents import (  # noqa
         communication_agent, calendar_agent, github_agent, shiksha_agent,
         graph_agent, gmail_agent, drive_agent, notion_agent, arxiv_agent,
-        wolfram_agent, general_agent,
+        wolfram_agent, general_agent, social_agent,
     )
-    print("[ok] v2 package + all 11 agent modules import")
+    from v2.agents import registry  # noqa
+    print(f"[ok] v2 package + all {len(registry.SPECIALISTS)} specialist modules import")
 
     # 2. app imports with v2 mounted
     from fastapi.testclient import TestClient
@@ -42,7 +43,7 @@ def main() -> int:
         assert r.status_code == 200, f"/v2/health -> {r.status_code}"
         body = r.json()
         assert body["status"] == "ok" and body["type"] == "lumen-v2-magentic-one"
-        assert len(body["specialists"]) == 12
+        assert len(body["specialists"]) == len(registry.SPECIALISTS)
         print(f"[ok] GET /v2/health -> 200 ({len(body['specialists'])} specialists, "
               f"cosmos_ready={body['cosmos_ready']})")
 
@@ -59,7 +60,7 @@ def main() -> int:
         print(f"[ok] POST /chat and /v2/chat both auth-gated ({r1.status_code}/{r2.status_code})")
 
         # 6. v2 /chat end-to-end under a valid v1 JWT (wiring; may error w/o Azure)
-        from app.middleware.auth import sign_token
+        from app.auth import sign_token
         token = sign_token({"id": "smoke-user", "name": "Smoke", "email": "smoke@example.com"})
         r = client.post("/v2/chat", json={"message": "summarize my inbox"},
                         headers={"Authorization": f"Bearer {token}"})

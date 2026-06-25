@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.config import settings
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.agents.portfolio_agent import (
     ensure_portfolio_repo,
     upload_artifact,

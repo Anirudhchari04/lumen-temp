@@ -13,8 +13,9 @@ from pydantic import BaseModel
 from app.lumen.core import (
     get_lumen_profile, get_lumen_state, update_progress,
     get_or_create_lumen, get_all_lumens, get_lumen, save_lumen,
+    ensure_username, set_username, build_share_url, is_valid_username,
 )
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,59 @@ async def lumen_token_usage_reset(current_user: dict = Depends(get_current_user)
     from app.lumen.token_tracker import reset_session
     reset_session(current_user["id"])
     return {"ok": True}
+
+
+# ── Shareable Lumen link ─────────────────────────────────────────────
+
+class UsernameBody(BaseModel):
+    username: str
+
+
+@router.get("/me/share")
+async def my_share_link(current_user: dict = Depends(get_current_user)):
+    """Return the signed-in user's public, shareable Lumen link.
+
+    Backfills a username on first call for Lumens that predate the field, e.g.
+    `{"username": "manohar", "share_url": "https://.../u/manohar"}`.
+    """
+    lumen = await get_or_create_lumen(
+        current_user["id"], current_user.get("name", ""), current_user.get("email", ""),
+    )
+    lumen = await ensure_username(lumen)
+    username = lumen["username"]
+    return {
+        "username": username,
+        "share_url": build_share_url(username),
+        "discoverable": lumen.get("social", {}).get("discoverable", True),
+    }
+
+
+@router.put("/me/username")
+async def change_username(body: UsernameBody, current_user: dict = Depends(get_current_user)):
+    """Set/change the signed-in user's username (validated + uniqueness-checked)."""
+    try:
+        lumen = await set_username(current_user["id"], body.username)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {
+        "username": lumen["username"],
+        "share_url": build_share_url(lumen["username"]),
+    }
+
+
+@router.get("/username-available")
+async def username_available(
+    username: str = Query(..., min_length=3, max_length=30),
+    current_user: dict = Depends(get_current_user),
+):
+    """Check whether a desired username is valid and free (for live form UX)."""
+    from app.lumen.core import username_exists
+    username = username.strip().lower()
+    if not is_valid_username(username):
+        return {"available": False, "reason": "invalid"}
+    taken = await username_exists(username, exclude_id=current_user["id"])
+    return {"available": not taken, "reason": "taken" if taken else "ok"}
+
 
 
 @router.get("/usage/tokens/all")

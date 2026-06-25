@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Query
 
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.agents.shiksha_agent import (
     get_available_agents,
     get_user_progress,

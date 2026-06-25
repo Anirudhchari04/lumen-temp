@@ -8,7 +8,7 @@ import logging
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from app.agents.coding_ta import generate_and_save, ARTIFACT_TYPES, TA_FOLDER
 from app.agents.portfolio_agent import list_artifacts
 

@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from app.config import settings
-from app.middleware.auth import get_current_user, sign_token
+from app.auth import get_current_user, sign_token
 from app.lumen.core import get_lumen, get_or_create_lumen
 from app.agents.gmail_agent import (
     is_google_connected,

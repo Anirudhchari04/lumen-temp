@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -118,6 +118,23 @@ async def health():
     return {"status": "ok", "version": "1.0.0", "type": "lumen-demo"}
 
 
+@app.get("/u/{username}")
+async def public_lumen_link(username: str):
+    """Public, shareable Lumen link — `https://<host>/u/manohar`.
+
+    Serves the SPA so the link opens the Lumen interface. The frontend then
+    resolves the username (via /lumen/link/{username}) and either shows the
+    owner's own interface (if the visitor IS that user) or opens peer-to-peer
+    comms with that Lumen (if the visitor is someone else).
+    """
+    spa_index = os.path.join(_frontend_dist, "index.html")
+    if os.path.exists(spa_index):
+        return FileResponse(spa_index, headers={"Cache-Control": "no-store, must-revalidate"})
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse("<html><body><h2>Lumen is starting up…</h2></body></html>", status_code=503)
+
+
+
 # Routes
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
@@ -161,7 +178,7 @@ except Exception as _v2_err:
 
 # Calendar agent endpoints
 from app.agents.calendar_agent import generate_study_plan, schedule_event, get_user_events, update_event_status, delete_event, parse_and_schedule, get_prefs, set_prefs, get_notifications, mark_notifications_read, start_notification_scanner
-from app.middleware.auth import get_current_user
+from app.auth import get_current_user
 from fastapi import Depends
 from pydantic import BaseModel
 

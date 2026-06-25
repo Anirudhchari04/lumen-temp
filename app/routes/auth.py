@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.lumen.core import get_or_create_lumen, get_lumen_profile
-from app.middleware.auth import verify_entra_token, sign_token, get_current_user
+from app.auth import verify_entra_token, sign_token, get_current_user
 from app.config import settings
 
 logger = logging.getLogger(__name__)

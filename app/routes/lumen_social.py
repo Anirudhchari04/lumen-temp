@@ -14,8 +14,8 @@ UTC = _tz.utc
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.lumen.core import get_lumen, get_all_lumens, save_lumen
-from app.middleware.auth import get_current_user
+from app.lumen.core import get_lumen, get_all_lumens, save_lumen, get_lumen_by_username, build_share_url, ensure_username
+from app.auth import get_current_user
 from app.db.cosmos import (
     is_cosmos_ready,
     add_peer_message,
@@ -74,6 +74,60 @@ async def compare_with_peer(peer_id: str, current_user: dict = Depends(get_curre
         "peer": _progress_summary(peer_lumen, anonymize=True),
         "common_topics": _find_common_topics(my_lumen, peer_lumen),
         "suggestions": _collaboration_suggestions(my_lumen, peer_lumen),
+    }
+
+
+# ── Username-based shareable links ───────────────────────────
+
+@router.get("/by-username/{username}")
+async def public_lumen_by_username(username: str):
+    """Public (no-auth) resolution of a shareable Lumen link by username.
+
+    Returns minimal public info for a discoverable Lumen — used to render a
+    preview before sign-in. Private/undiscoverable Lumens return 403.
+    """
+    lumen = await get_lumen_by_username(username)
+    if not lumen:
+        raise HTTPException(status_code=404, detail="No Lumen with that username")
+    if not lumen.get("social", {}).get("discoverable", True):
+        raise HTTPException(status_code=403, detail="This Lumen is private")
+    return {
+        "username": lumen["username"],
+        "id": lumen["id"],
+        "name": lumen.get("name", ""),
+        "share_url": build_share_url(lumen["username"]),
+        "card": build_lumen_card(lumen),
+    }
+
+
+@router.get("/link/{username}")
+async def resolve_lumen_link(username: str, current_user: dict = Depends(get_current_user)):
+    """Resolve a shareable Lumen link for the signed-in visitor.
+
+    The frontend uses `relationship` to decide where the link goes:
+      - "self" → the visitor owns this Lumen → open their own interface.
+      - "peer" → someone else's Lumen → open peer-to-peer comms with them.
+    """
+    lumen = await get_lumen_by_username(username)
+    if not lumen:
+        raise HTTPException(status_code=404, detail="No Lumen with that username")
+
+    is_self = lumen["id"] == current_user["id"]
+    if not is_self and not lumen.get("social", {}).get("discoverable", True):
+        raise HTTPException(status_code=403, detail="This Lumen is private")
+
+    return {
+        "username": lumen["username"],
+        "target_id": lumen["id"],
+        "relationship": "self" if is_self else "peer",
+        "profile": {
+            "name": lumen.get("name", ""),
+            "bio": lumen.get("bio", ""),
+            "expertise": lumen.get("expertise", ""),
+            "interests": lumen.get("interests", ""),
+            "org": lumen.get("org", ""),
+        },
+        "card": build_lumen_card(lumen),
     }
 
 
@@ -1048,6 +1102,117 @@ async def audit_route(current_user: dict = Depends(get_current_user),
                       limit: int = 100):
     from app.lumen.security import get_audit
     return {"events": get_audit(current_user["id"], limit)}
+
+
+# ── Peer-Chat (constrained: ONLY the peer's Lumen, no caller's agents) ──────
+
+class PeerChatBody(BaseModel):
+    message: str
+
+
+@router.get("/peer-chat/{peer_id}")
+async def get_peer_chat_thread(peer_id: str,
+                               current_user: dict = Depends(get_current_user)):
+    """Return the full message thread between the caller and peer_id, plus the
+    peer's public profile for the chat header.
+
+    This is the backing endpoint for the isolated PeerChat page: it never
+    touches the caller's own agents — only the peer's public profile data."""
+    peer = await get_lumen(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    if (peer.get("id") != current_user["id"]
+            and not peer.get("social", {}).get("discoverable", True)):
+        raise HTTPException(status_code=403, detail="This Lumen is private")
+
+    await _hydrate_peer_messages(current_user["id"])
+
+    thread = [
+        m for m in _peer_messages
+        if (m["from_id"] == current_user["id"] and m["to_id"] == peer_id)
+        or (m["from_id"] == peer_id and m["to_id"] == current_user["id"])
+    ]
+    thread.sort(key=lambda m: m.get("created_at", ""))
+
+    return {
+        "peer": {
+            "id": peer["id"],
+            "name": peer.get("name", ""),
+            "username": peer.get("username", ""),
+            "bio": peer.get("bio", ""),
+            "expertise": peer.get("expertise", ""),
+            "interests": peer.get("interests", ""),
+            "share_url": build_share_url(peer.get("username", peer["id"])),
+            "card": build_lumen_card(peer),
+        },
+        "thread": thread,
+    }
+
+
+@router.post("/peer-chat/{peer_id}")
+async def send_peer_chat_message(peer_id: str, body: PeerChatBody,
+                                 current_user: dict = Depends(get_current_user)):
+    """Send one message in the peer-chat channel and get the peer's Lumen reply.
+
+    CONSTRAINT: routing is strictly through the TARGET PEER's Lumen only.
+    The caller's own agents (calendar, github, notion …) are never invoked.
+    The peer's Lumen replies using only the peer's public profile + conversation
+    history, the same path as _peer_lumen_autoreply but synchronous so the
+    frontend gets the reply in the same HTTP response.
+    """
+    if not body.message or not body.message.strip():
+        raise HTTPException(status_code=400, detail="message is required")
+
+    peer = await get_lumen(peer_id)
+    if not peer:
+        raise HTTPException(status_code=404, detail="Peer not found")
+    if not peer.get("social", {}).get("discoverable", True):
+        raise HTTPException(status_code=403, detail="This Lumen is private")
+
+    sender_name = current_user.get("name", "Student")
+    await _hydrate_peer_messages(current_user["id"])
+
+    # Persist the outgoing message.
+    outgoing = {
+        "id": str(__import__("uuid").uuid4())[:8],
+        "kind": "peer_chat",          # distinct kind so it's easy to filter
+        "from_id": current_user["id"],
+        "from_name": sender_name,
+        "sender_display": f"{sender_name.split(' ')[0]}'s Lumen",
+        "from_lumen": True,
+        "to_id": peer_id,
+        "to_name": peer.get("name", "Peer"),
+        "message": body.message.strip(),
+        "read": False,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    await _persist_peer_message(outgoing)
+
+    # Build conversation history (this thread only) for context.
+    conversation = [
+        m for m in _peer_messages
+        if (m["from_id"] == current_user["id"] and m["to_id"] == peer_id)
+        or (m["from_id"] == peer_id and m["to_id"] == current_user["id"])
+    ]
+
+    # Get the peer's Lumen reply — same pipeline as _peer_lumen_autoreply but
+    # awaited inline so we can return it in this response. No caller agents used.
+    reply = await _peer_lumen_autoreply(
+        sender_id=current_user["id"],
+        sender_name=sender_name,
+        peer=peer,
+        incoming_message=body.message.strip(),
+        conversation_history=conversation,
+    )
+
+    # Mark the reply kind consistently.
+    if reply:
+        reply["kind"] = "peer_chat"
+
+    return {
+        "sent": outgoing,
+        "reply": reply,
+    }
 
 
 def _progress_summary(lumen: dict, anonymize: bool = False) -> dict:

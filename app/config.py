@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # Auto-derived at startup from WEBSITE_HOSTNAME on Azure App Service,
     # else http://localhost:{port}.
     app_base_url: str = ""
+    # Public base domain for shareable Lumen links, e.g. "lumen.org".
+    # When set, share links use the subdomain form `https://{username}.lumen.org`
+    # (requires wildcard DNS + host routing). When empty, links fall back to the
+    # path form `{app_base_url}/u/{username}`.
+    lumen_base_domain: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

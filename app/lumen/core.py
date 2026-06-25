@@ -74,11 +74,47 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+import re as _re
+
+# Reserved slugs that must never be assigned as a username (avoid route/path clashes).
+_RESERVED_USERNAMES = {
+    "api", "auth", "admin", "lumen", "chat", "agents", "static", "public",
+    "health", "u", "v2", "me", "peers", "share", "login", "logout", "settings",
+    "www", "app", "assets", "favicon",
+}
+
+USERNAME_RE = _re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$")
+
+
+def _slugify(text: str) -> str:
+    """Lowercase, ASCII, hyphen-separated slug suitable for a URL path segment."""
+    text = (text or "").strip().lower()
+    text = _re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return text[:30]
+
+
+def generate_username(name: str, email: str) -> str:
+    """Build a base username slug from a name (preferred) or email local-part."""
+    base = _slugify(name) or _slugify((email or "").split("@")[0]) or "lumen"
+    # A bare reserved word or too-short slug gets a stable suffix.
+    if base in _RESERVED_USERNAMES or len(base) < 3:
+        base = f"{base}-user"
+    return base
+
+
+def is_valid_username(username: str) -> bool:
+    """Validate a user-chosen username: 3–30 chars, [a-z0-9-], not reserved."""
+    if not username or username in _RESERVED_USERNAMES:
+        return False
+    return bool(USERNAME_RE.match(username))
+
+
 def _default_lumen(user_id: str, name: str, email: str, **kwargs) -> dict:
     """Build a default Lumen document."""
     return {
         "id": user_id,
         "lumen_id": f"lumen://{kwargs.get('tenant_id', 'default')}/{user_id}",
+        "username": kwargs.get("username") or generate_username(name, email),
         "name": name,
         "email": email,
         "org": email.split("@")[1] if "@" in email else "",
@@ -130,6 +166,8 @@ async def get_or_create_lumen(user_id: str, name: str, email: str, **kwargs) -> 
     lumen = await get_lumen(user_id)
     if not lumen:
         lumen = _default_lumen(user_id, name, email, **kwargs)
+        # Guarantee the auto-generated username is unique across the network.
+        lumen["username"] = await _allocate_unique_username(lumen["username"], user_id)
         lumen = await save_lumen(lumen)
     return lumen
 
@@ -282,6 +320,114 @@ async def get_all_lumens() -> list[dict]:
         {"id": l["id"], "name": l["name"], "email": l.get("email", ""), "lumen_id": l["lumen_id"]}
         for l in _lumens.values()
     ]
+
+
+async def _all_lumens_full() -> list[dict]:
+    """Return full Lumen documents (Cosmos or in-memory). Internal use only."""
+    if is_cosmos_ready():
+        from app.db.cosmos import query_all_lumens
+        return await query_all_lumens()
+    return list(_lumens.values())
+
+
+async def username_exists(username: str, exclude_id: str | None = None) -> bool:
+    """True if any other Lumen already owns this username (case-insensitive)."""
+    username = (username or "").lower()
+    for l in await _all_lumens_full():
+        if exclude_id and l.get("id") == exclude_id:
+            continue
+        if (l.get("username") or "").lower() == username:
+            return True
+    return False
+
+
+async def get_lumen_by_username(username: str) -> dict | None:
+    """Resolve a Lumen by its public username slug (case-insensitive)."""
+    username = (username or "").lower()
+    if not username:
+        return None
+    for l in await _all_lumens_full():
+        if (l.get("username") or "").lower() == username:
+            return l
+    return None
+
+
+async def _allocate_unique_username(base: str, owner_id: str) -> str:
+    """Return `base`, or `base-2`, `base-3`, … until one is free for owner_id."""
+    candidate = base
+    n = 1
+    while await username_exists(candidate, exclude_id=owner_id):
+        n += 1
+        candidate = f"{base}-{n}"
+    return candidate
+
+
+async def ensure_username(lumen: dict) -> dict:
+    """Backfill a unique username on an existing Lumen that predates the field.
+
+    Persists the Lumen if a username was added. Returns the (possibly updated) doc.
+    """
+    if lumen.get("username"):
+        return lumen
+    base = generate_username(lumen.get("name", ""), lumen.get("email", ""))
+    lumen["username"] = await _allocate_unique_username(base, lumen["id"])
+    return await save_lumen(lumen)
+
+
+async def set_username(user_id: str, username: str) -> dict:
+    """Set a user-chosen username after validation + uniqueness checks.
+
+    Raises ValueError on invalid format, reserved word, or collision.
+    """
+    username = (username or "").strip().lower()
+    if not is_valid_username(username):
+        raise ValueError(
+            "Username must be 3–30 chars, lowercase letters/numbers/hyphens, "
+            "and not a reserved word."
+        )
+    lumen = await get_lumen(user_id)
+    if not lumen:
+        raise ValueError("Lumen not found")
+    if await username_exists(username, exclude_id=user_id):
+        raise ValueError("That username is already taken")
+    lumen["username"] = username
+    return await save_lumen(lumen)
+
+
+def build_share_url(username: str) -> str:
+    """Build the public, shareable Lumen link for a username.
+
+    Subdomain form (preferred) when LUMEN_BASE_DOMAIN is configured, e.g.
+    `https://manohar.lumen.org` — requires wildcard DNS + host routing.
+    Otherwise falls back to the path form `https://<app_base_url>/u/manohar`.
+    """
+    base_domain = (getattr(settings, "lumen_base_domain", "") or "").strip().lower()
+    if base_domain:
+        return f"https://{username}.{base_domain}"
+    base = (settings.app_base_url or "").rstrip("/")
+    return f"{base}/u/{username}"
+
+
+def extract_username_from_host(host: str) -> str | None:
+    """Extract the Lumen username from a request Host header.
+
+    Returns the subdomain label for `{username}.{LUMEN_BASE_DOMAIN}` hosts,
+    ignoring reserved labels (www, app, api). Returns None when the host is not
+    a Lumen subdomain (e.g. apex domain, localhost, or base domain not set).
+    """
+    base_domain = (getattr(settings, "lumen_base_domain", "") or "").strip().lower()
+    if not base_domain or not host:
+        return None
+    host = host.split(":")[0].strip().lower()  # drop any :port
+    suffix = "." + base_domain
+    if not host.endswith(suffix):
+        return None
+    label = host[: -len(suffix)]
+    if not label or "." in label or label in _RESERVED_USERNAMES:
+        return None
+    return label
+
+
 
 
 # ── Sync wrappers for backward compat ────────────────────────

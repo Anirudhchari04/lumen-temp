@@ -15,6 +15,7 @@ from v2.agents import (
     graph_agent,
     notion_agent,
     shiksha_agent,
+    social_agent,
     wolfram_agent,
 )
 
@@ -29,5 +30,6 @@ __all__ = [
     "graph_agent",
     "notion_agent",
     "shiksha_agent",
+    "social_agent",
     "wolfram_agent",
 ]
