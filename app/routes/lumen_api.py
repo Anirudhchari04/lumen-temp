@@ -100,6 +100,55 @@ async def username_available(
     return {"available": not taken, "reason": "taken" if taken else "ok"}
 
 
+# ── Lumen skills (uses the OO Lumen class as the front door) ─────────
+
+class SkillBody(BaseModel):
+    name: str
+    description: str = ""
+    agent: str | None = None   # optional sub-agent that powers the skill
+
+
+@router.get("/me/skills")
+async def list_my_skills(current_user: dict = Depends(get_current_user)):
+    """List the signed-in user's Lumen skills + the sub-agents available to link."""
+    from app.lumen.lumen import Lumen
+    me = await Lumen.get_or_create(
+        current_user["id"], current_user.get("name", ""), current_user.get("email", ""),
+    )
+    return {"skills": me.skills, "agents": me.agents}
+
+
+@router.post("/me/skills")
+async def add_my_skill(body: SkillBody, current_user: dict = Depends(get_current_user)):
+    """Add (or update) a skill on the signed-in user's Lumen."""
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Skill name is required")
+    from app.lumen.lumen import Lumen
+    me = await Lumen.get_or_create(
+        current_user["id"], current_user.get("name", ""), current_user.get("email", ""),
+    )
+    agent = (body.agent or "").strip() or None
+    if agent and agent not in me.agents:
+        raise HTTPException(status_code=400, detail=f"Unknown sub-agent '{agent}'")
+    skill = me.add_skill(name, description=(body.description or "").strip(), agent=agent)
+    await me.save()
+    return {"ok": True, "skill": skill.__dict__, "skills": me.skills}
+
+
+@router.delete("/me/skills/{name}")
+async def remove_my_skill(name: str, current_user: dict = Depends(get_current_user)):
+    """Remove a skill from the signed-in user's Lumen."""
+    from app.lumen.lumen import Lumen
+    me = await Lumen.retrieve(current_user["id"])
+    if not me:
+        raise HTTPException(status_code=404, detail="Lumen not found")
+    removed = me.remove_skill(name)
+    if removed:
+        await me.save()
+    return {"ok": removed, "skills": me.skills}
+
+
 
 @router.get("/usage/tokens/all")
 async def lumen_token_usage_all():

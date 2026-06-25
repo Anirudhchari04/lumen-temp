@@ -96,6 +96,13 @@ export const api = {
   myShare:         () => authed('/lumen/me/share'),
   setUsername:     (username) =>
     authed('/lumen/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),
+
+  // Lumen skills (OO Lumen class) → { skills, agents }
+  mySkills:        () => authed('/lumen/me/skills'),
+  addSkill:        (name, description, agent) =>
+    authed('/lumen/me/skills', { method: 'POST', body: JSON.stringify({ name, description, agent }) }),
+  removeSkill:     (name) =>
+    authed(`/lumen/me/skills/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   // Resolve a shared link for the signed-in visitor → { relationship: 'self'|'peer', target_id, ... }
   lumenLink:       (username) => authed(`/lumen/link/${encodeURIComponent(username)}`),
 

@@ -133,6 +133,7 @@ def _default_lumen(user_id: str, name: str, email: str, **kwargs) -> dict:
         },
         "session_history": [],
         "artifacts": [],
+        "skills": [],
         "social": {"discoverable": True, "share_progress": True},
         "created_at": _now(),
         "updated_at": _now(),

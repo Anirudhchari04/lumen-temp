@@ -39,6 +39,14 @@ export default function ProfileModal({ open, onClose, onSaved }) {
   const [shareErr, setShareErr]      = useState('')
   const [copied, setCopied]          = useState(false)
 
+  // Lumen skills state
+  const [skills, setSkills]          = useState([])
+  const [agentsList, setAgentsList]  = useState([])
+  const [skillName, setSkillName]    = useState('')
+  const [skillAgent, setSkillAgent]  = useState('')
+  const [skillBusy, setSkillBusy]    = useState(false)
+  const [skillErr, setSkillErr]      = useState('')
+
   // GitHub portfolio state
   const [ghOwner, setGhOwner]             = useState('')
   const [ghStatus, setGhStatus]           = useState(null)
@@ -98,6 +106,10 @@ export default function ProfileModal({ open, onClose, onSaved }) {
         setUsernameState(s?.username || '')
         setShareUrl(s?.share_url || '')
         setUsernameInput(s?.username || '')
+      }).catch(() => {}),
+      api.mySkills().then(s => {
+        setSkills(s?.skills || [])
+        setAgentsList(s?.agents || [])
       }).catch(() => {}),
       loadGhStatus(),
       fetch('/lumen/email/connection-status', {
@@ -231,6 +243,23 @@ export default function ProfileModal({ open, onClose, onSaved }) {
     try { await navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {}
   }
 
+  const addSkill = async () => {
+    const n = (skillName || '').trim()
+    if (!n) return
+    setSkillBusy(true); setSkillErr('')
+    try {
+      const r = await api.addSkill(n, '', skillAgent || null)
+      setSkills(r?.skills || [])
+      setSkillName(''); setSkillAgent('')
+    } catch (e) {
+      setSkillErr((e?.message || '').includes('400') ? 'Could not add that skill' : 'Add failed')
+    } finally { setSkillBusy(false) }
+  }
+
+  const removeSkill = async (name) => {
+    try { const r = await api.removeSkill(name); setSkills(r?.skills || []) } catch {}
+  }
+
   const save = async () => {
     setSaving(true); setErr('')
     try {
@@ -309,6 +338,44 @@ export default function ProfileModal({ open, onClose, onSaved }) {
                   </button>
                 </div>
                 {shareErr && <div className="text-2xs text-rose-600 mt-1">{shareErr}</div>}
+              </div>
+
+              {/* Lumen skills */}
+              <div className="pt-3 border-t border-beige-100">
+                <div className="text-[12px] font-medium text-ink">Skills</div>
+                <div className="text-2xs text-ink-muted mt-0.5">
+                  Capabilities your Lumen advertises — optionally powered by one of its sub-agents.
+                </div>
+                {skills.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {skills.map(s => (
+                      <div key={s.id || s.name}
+                        className="flex items-center gap-2 rounded-inner bg-beige-50 border border-beige-200 px-3 py-1.5">
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] text-ink">{s.name}</span>
+                          {s.agent && <span className="ml-2 text-2xs text-ink-muted">via {s.agent}</span>}
+                        </div>
+                        <button onClick={() => removeSkill(s.name)}
+                          className="text-2xs text-rose-600 hover:underline shrink-0">remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <input value={skillName} onChange={e => setSkillName(e.target.value)}
+                    placeholder="add a skill…"
+                    className="flex-1 rounded-inner bg-beige-50 border border-beige-200 px-3 py-2 text-[13px] outline-none focus:border-amber" />
+                  <select value={skillAgent} onChange={e => setSkillAgent(e.target.value)}
+                    className="rounded-inner bg-beige-50 border border-beige-200 px-2 py-2 text-[12px] text-ink outline-none focus:border-amber">
+                    <option value="">no agent</option>
+                    {agentsList.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  <button onClick={addSkill} disabled={skillBusy || !skillName.trim()}
+                    className="px-3 py-2 rounded-inner bg-ink text-white text-[12px] shrink-0 disabled:opacity-40">
+                    {skillBusy ? '\u2026' : 'Add'}
+                  </button>
+                </div>
+                {skillErr && <div className="text-2xs text-rose-600 mt-1">{skillErr}</div>}
               </div>
 
               <FieldWithToggle
