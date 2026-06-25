@@ -61,5 +61,39 @@ SOCIAL_KW = SocialAgent.KEYWORDS
 
 
 def matches(message: str, keywords) -> bool:
-    """True if any keyword is a substring of the (already lower-cased) message."""
-    return any(kw in message for kw in keywords)
+    """True if any keyword matches the (already lower-cased) message.
+
+    Robustness: matching is WORD-BOUNDARY aware, not naive substring. Each
+    keyword must start on a word boundary, but a trailing suffix is allowed —
+    so "learn" still matches "learning"/"learned", while "start" no longer
+    falsely matches inside "restart" and "mark" no longer matches "remark".
+    Patterns are compiled once per keyword group and cached.
+    """
+    pat = _compiled_for(keywords)
+    return bool(pat.search(message or ""))
+
+
+# ── word-boundary compilation (cached per keyword group) ────────────────────
+import re as _re
+
+_PATTERN_CACHE: dict[int, "_re.Pattern"] = {}
+
+
+def _compile(keywords) -> "_re.Pattern":
+    # Longest phrases first so e.g. "create a google doc" wins over "google doc".
+    parts = sorted({k.strip() for k in keywords if k and k.strip()},
+                   key=len, reverse=True)
+    if not parts:
+        return _re.compile(r"(?!x)x")  # never matches
+    # Start-anchored word boundary; suffixes allowed (no trailing \b).
+    return _re.compile(r"\b(?:" + "|".join(_re.escape(p) for p in parts) + r")",
+                       _re.IGNORECASE)
+
+
+def _compiled_for(keywords) -> "_re.Pattern":
+    key = id(keywords)  # module-level tuples are stable for the process lifetime
+    pat = _PATTERN_CACHE.get(key)
+    if pat is None:
+        pat = _compile(keywords)
+        _PATTERN_CACHE[key] = pat
+    return pat

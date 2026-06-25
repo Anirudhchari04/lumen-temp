@@ -352,17 +352,26 @@ def _handle_disconnect(message: str) -> dict:
 
 
 def _should_skip_llm_routing(message: str, rule_intent: str) -> bool:
-    """True for obvious messages where the LLM router adds nothing.
+    """Whether dispatch may answer from the cheap rule layer and skip the
+    semantic LLM router.
 
-    Keeps greetings / progress / meta cheap, and pins unambiguous Portfolio
-    (GitHub) queries so the LLM can't mistake a "math-ta folder" for Drive.
-    Everything else is LLM-routed.
+    Policy (the "regex vs semantic" answer): the semantic LLM (llm_classify_multi)
+    is PRIMARY for natural language. We bypass it ONLY when the rule result is
+    deterministic and cheap:
+      • a greeting / thanks (matched structurally by _GREETING_RE), or
+      • one of _LLM_FASTPATH_INTENTS below.
+    For every other intent the message still goes to the LLM; the keyword rules
+    are then merely the OFFLINE FALLBACK used when the LLM is unavailable.
     """
-    if rule_intent in (Intent.PROGRESS, Intent.META, Intent.PORTFOLIO):
-        return True
-    if _GREETING_RE.match(message or ""):
-        return True
-    return False
+    return rule_intent in _LLM_FASTPATH_INTENTS or bool(_GREETING_RE.match(message or ""))
+
+
+# Intents safe to answer from rules without a semantic LLM call:
+#   PROGRESS / META → handled directly by Lumen's general chat (no specialist).
+#   PORTFOLIO       → pinned: its keyword signals ("math-ta folder", "staged
+#                     commit", "pull request") are precise, and skipping the LLM
+#                     avoids it mistaking a GitHub folder op for Google Drive.
+_LLM_FASTPATH_INTENTS = frozenset({Intent.PROGRESS, Intent.META, Intent.PORTFOLIO})
 
 
 # ── Dispatch ─────────────────────────────────────────────────
