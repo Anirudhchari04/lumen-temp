@@ -116,17 +116,30 @@ async def resolve_lumen_link(username: str, current_user: dict = Depends(get_cur
     if not is_self and not lumen.get("social", {}).get("discoverable", True):
         raise HTTPException(status_code=403, detail="This Lumen is private")
 
+    # Two-tier access (design §13): public fields are always visible; private
+    # detail unlocks only for the owner or an accepted connection.
+    from app.lumen.connections import is_connected
+    connected = is_self or await is_connected(current_user["id"], lumen["id"])
+    profile = {
+        "name": lumen.get("name", ""),
+        "bio": lumen.get("bio", ""),
+        "expertise": lumen.get("expertise", ""),
+        "interests": lumen.get("interests", ""),
+        "org": lumen.get("org", ""),
+    }
+    if connected:
+        profile["private"] = {
+            "email": lumen.get("email", ""),
+            "preferences": lumen.get("preferences", {}),
+            "curriculum_progress": lumen.get("curriculum_progress", {}),
+        }
+
     return {
         "username": lumen["username"],
         "target_id": lumen["id"],
         "relationship": "self" if is_self else "peer",
-        "profile": {
-            "name": lumen.get("name", ""),
-            "bio": lumen.get("bio", ""),
-            "expertise": lumen.get("expertise", ""),
-            "interests": lumen.get("interests", ""),
-            "org": lumen.get("org", ""),
-        },
+        "connected": connected,
+        "profile": profile,
         "card": build_lumen_card(lumen),
     }
 

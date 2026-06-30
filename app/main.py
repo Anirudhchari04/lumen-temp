@@ -140,6 +140,7 @@ from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
 from app.routes.lumen_api import router as lumen_router
 from app.routes.lumen_social import router as social_router
+from app.routes.lumen_platform import router as platform_router
 from app.orchestrator.registry import router as agents_router
 from app.protocols.a2a import router as a2a_router
 from app.protocols.lumen_a2a import router as lumen_a2a_router
@@ -154,6 +155,7 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(chat_router, prefix="/chat")
 app.include_router(lumen_router, prefix="/lumen")
 app.include_router(social_router, prefix="/lumen")
+app.include_router(platform_router, prefix="/lumen")
 app.include_router(agents_router, prefix="/agents")
 app.include_router(a2a_router)
 app.include_router(lumen_a2a_router)
@@ -651,9 +653,13 @@ from app.events.bus import get_recent_events
 
 @app.get("/.well-known/agent-card.json")
 async def lumen_system_card(request: Request):
-    """Lumen system orchestrator card — public, no auth required. A2A v1.0.0."""
+    """Lumen system orchestrator card — public, no auth required. A2A v1.0.0.
+
+    Signed (detached JWS) so consumers can verify authenticity against the
+    platform key set at /.well-known/jwks.json (design invariant #2).
+    """
     base = str(request.base_url).rstrip("/")
-    return {
+    card = {
         "name": "Lumen",
         "description": (
             "Personal AI learning companion and multi-agent orchestrator. "
@@ -729,6 +735,8 @@ async def lumen_system_card(request: Request):
              "examples": ["What Shiksha courses am I in?", "Show my blockchain progress"]},
         ],
     }
+    from app.lumen.trust import sign_card
+    return sign_card(card)
 
 
 @app.get("/.well-known/agent.json")
@@ -736,6 +744,18 @@ async def well_known_agent_json_redirect():
     """Backwards compat redirect to correct A2A v1.0.0 path."""
     from fastapi.responses import RedirectResponse
     return RedirectResponse("/.well-known/agent-card.json", status_code=301)
+
+
+@app.get("/.well-known/jwks.json")
+async def lumen_jwks():
+    """Platform public key set — verifies signed agent cards (design §11).
+
+    Consumers fetch a card and this key from the same host and verify one
+    against the other ("issuer = domain owner"). Keys carry a ``kid`` to
+    support rotation.
+    """
+    from app.lumen.trust import public_jwks
+    return public_jwks()
 
 
 @app.get("/extensions/litp/v1")

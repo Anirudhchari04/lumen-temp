@@ -86,12 +86,13 @@ def build_lumen_a2a_card(lumen: dict, base_url: str = "") -> dict:
 
 @router.get("/a2a/lumen/{user_id}/agent-card.json")
 async def lumen_a2a_card_v2(user_id: str, request: Request):
-    """A2A v1.0.0 compliant card for a Lumen instance."""
+    """A2A v1.0.0 compliant card for a Lumen instance (signed, detached JWS)."""
     lumen = await get_lumen(user_id)
     if not lumen:
         lumen = {"id": user_id, "name": "Student"}
     base_url = str(request.base_url).rstrip("/")
-    return build_lumen_a2a_card(lumen, base_url)
+    from app.lumen.trust import sign_card
+    return sign_card(build_lumen_a2a_card(lumen, base_url))
 
 
 @router.get("/a2a/lumen/{user_id}/agent.json")
@@ -139,6 +140,18 @@ async def lumen_a2a_jsonrpc(user_id: str, body: dict):
 
     lumen = await get_lumen(user_id)
     target_name = (lumen or {}).get("name", "Student")
+
+    # Authorization gate (design §13/§18 step 4): proven identity is not
+    # permission. Conversation requires an accepted connection between the two
+    # lumens. Opt-in via LUMEN_ENFORCE_CONNECTIONS so the existing demo keeps
+    # working until connections are rolled out.
+    import os as _os
+    if _os.getenv("LUMEN_ENFORCE_CONNECTIONS", "").strip().lower() in {"1", "true", "yes"}:
+        if sender_id not in ("unknown", user_id):
+            from app.lumen.connections import is_connected
+            if not await is_connected(user_id, sender_id):
+                return _jsonrpc_error(rpc_id, -32003,
+                                      "no accepted connection between these lumens")
 
     if skill_id == "message":
         result = await _handle_a2a_message(user_id, target_name, sender_id, sender_name, text)

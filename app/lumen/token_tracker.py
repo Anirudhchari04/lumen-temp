@@ -216,6 +216,18 @@ async def record_usage(user_id: str, prompt_tokens: int, completion_tokens: int,
             logger.info(f"Cost spike for {user_id}: {source} ${call_cost:.4f} ({reason})")
 
         lumen["token_usage"] = tu
+
+        # Economics (design invariant #7): the owner of the lumen that generated
+        # this work pays for it. Charge the same doc we're about to save, so the
+        # debit and the usage update persist together. Record-only here — a turn
+        # that has already run is never refused; pre-flight gating lives in
+        # app.lumen.credits.ensure_can_spend.
+        try:
+            from app.lumen.credits import apply_charge
+            apply_charge(lumen, call_cost, reason=f"llm:{source}", ref=model or None)
+        except Exception as ce:
+            logger.debug(f"Credit charge skipped for {user_id}: {ce}")
+
         await save_lumen(lumen)
     except Exception as e:
         logger.warning(f"Token usage persist failed for {user_id}: {e}")
